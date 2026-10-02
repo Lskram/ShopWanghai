@@ -734,6 +734,18 @@ export default function AdminDashboard() {
                           </span>
                         </div>
 
+                        {/* Extracted Keywords Badges */}
+                        {log.extracted_keywords && log.extracted_keywords.length > 0 && (
+                          <div className="flex flex-wrap items-center gap-1 mb-2 ml-1">
+                            <span className="text-[10px] text-slate-400 font-bold">🏷️ คีย์เวิร์ดที่สกัดได้:</span>
+                            {log.extracted_keywords.map((kw, i) => (
+                              <span key={i} className="text-[10px] bg-purple-100 text-purple-800 font-semibold px-2 py-0.5 rounded-md">
+                                #{kw}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+
                         {/* Bot Answer */}
                         <div className="flex items-start gap-2 mb-2">
                           <span className="text-xs font-bold text-emerald-700 shrink-0">🤖 บอทตอบ:</span>

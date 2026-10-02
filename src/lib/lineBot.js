@@ -581,6 +581,50 @@ async function callGeminiAi(prompt, geminiApiKey) {
 }
 
 /**
+ * Smart Keyword Extractor for Thai E-commerce queries
+ */
+export function extractKeywords(text) {
+  if (!text) return [];
+  const stopwords = [
+    'ครับ', 'ค่ะ', 'นะคะ', 'หน่อย', 'บ้าง', 'อะไร', 'มี', 'อยากได้', 
+    'ขอ', 'ซื้อ', 'กิน', 'ทาน', 'ช่วย', 'ไหม', 'มั้ย', 'นะ', 'จ้า', 
+    'เอ่ย', 'ว่า', 'จะ', 'ให้', 'ได้', 'ก็', 'ยัง', 'ใน', 'กับ', 'ของ'
+  ];
+  
+  let cleaned = text.toLowerCase().trim();
+  const keywords = [];
+
+  // Extract budget patterns (e.g. 50 บาท, งบ 100)
+  const budgetMatch = cleaned.match(/(\d+)\s*บาท/) || cleaned.match(/งบ\s*(\d+)/);
+  if (budgetMatch) {
+    keywords.push(`งบ${budgetMatch[1]}บาท`);
+  }
+
+  // High-value phrase tokens
+  const phrases = [
+    'ขนมโบราณ', 'ยุค 90', '90s', 'ของดีวังไฮ', 'otop', 'ส่งฟรี', 'ค่าส่ง', 
+    'การ์ดพลัง', 'บ้านกระดาษ', 'อกหัก', 'ง่วงนอน', 'ทำบุญ', 'ไหว้พระ', 
+    'ของฝาก', 'เบาหวาน', 'กินเจ', 'มังสวิรัติ', 'ข้าวหอมมะลิ', 'น้ำผึ้งป่า',
+    'โอเดงยา', 'จาจา', 'ตังเม', 'ข้าวแต๋น', 'กล้วยเบรคแตก'
+  ];
+  for (const phrase of phrases) {
+    if (cleaned.includes(phrase.toLowerCase())) {
+      keywords.push(phrase);
+    }
+  }
+
+  // Tokenize remaining words
+  const words = cleaned.replace(/[!?,.\/\\#]/g, ' ').split(/\s+/);
+  for (const w of words) {
+    if (w.length > 1 && !stopwords.includes(w) && !keywords.includes(w)) {
+      keywords.push(w);
+    }
+  }
+
+  return Array.from(new Set(keywords)).slice(0, 8);
+}
+
+/**
  * Main Message Router and Logic Handler with Contextual Bridge
  */
 export async function handleLineMessage(userMessage, storeUrl = DEFAULT_STORE_URL) {
@@ -609,14 +653,18 @@ export async function handleLineMessage(userMessage, storeUrl = DEFAULT_STORE_UR
   let finalReply = null;
   let matchedIntent = 'general_qa';
 
-  // Helper to finish and log chat
-  const wrapAndLog = async (messages, intent) => {
+  // Helper to finish and log chat with extracted keywords
+  const wrapAndLog = async (messages, intent, matchedRuleId = null) => {
     try {
       const botTextSummary = messages.map(m => m.text || m.altText || '').filter(Boolean).join(' | ');
+      const extractedKw = extractKeywords(userMessage);
+      
       await storeRepo.saveChatLog({
         user_query: userMessage,
+        extracted_keywords: extractedKw,
         bot_response: botTextSummary.slice(0, 300),
-        matched_intent: intent
+        matched_intent: intent,
+        matched_rule_id: matchedRuleId
       });
     } catch (e) {
       console.warn('Logging error:', e.message);
