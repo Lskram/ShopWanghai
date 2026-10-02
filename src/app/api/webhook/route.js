@@ -11,11 +11,16 @@ const DEFAULT_LINE_TOKEN = 'YWzK8zBn3WhDmPiBrn3VUP0WBZgCyqgs7m2pETTXOIhWpHdN13eH
 
 export const dynamic = 'force-dynamic';
 
+// Keep recent events in memory for live monitoring
+let recentEvents = [];
+
 export async function GET() {
   return NextResponse.json({
     status: 'online',
     service: 'LINE Webhook for ร้านค้าสวัสดิการกองทุนหมู่บ้านวังไฮ',
     lineAccount: '@237ipknp',
+    totalEventsReceived: recentEvents.length,
+    recentEvents: recentEvents.slice(-5),
     timestamp: new Date().toISOString()
   });
 }
@@ -47,6 +52,16 @@ export async function POST(req) {
     const storeUrl = process.env.NEXT_PUBLIC_BASE_URL || 'https://shop-wanghai-o7qg.vercel.app';
 
     console.log(`Processing ${events.length} LINE events...`);
+    
+    events.forEach(ev => {
+      recentEvents.push({
+        type: ev.type,
+        text: ev.message?.text,
+        replyToken: ev.replyToken ? `${ev.replyToken.slice(0, 6)}...` : null,
+        time: new Date().toISOString()
+      });
+    });
+    if (recentEvents.length > 50) recentEvents = recentEvents.slice(-50);
 
     // Process all incoming events asynchronously
     await Promise.all(
