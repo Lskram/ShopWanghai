@@ -464,7 +464,7 @@ export function createContactFlexMessage(storeUrl = DEFAULT_STORE_URL) {
 async function callModernAiAgent({ userMessage, knowledgeBase, products, trainingExamples, geminiApiKey }) {
   const apiKey = (geminiApiKey || process.env.GEMINI_API_KEY || '').trim();
   const catalogSummary = (products || []).map(p => 
-    `- [ID: ${p.id}] ${p.name} (ราคา ฿${p.price}/${p.unit || 'ชิ้น'} | หมวด: ${p.categoryName || p.category}): ${p.description} [Tags: ${(p.tags || []).join(', ')}]`
+    `- [ID: ${p.id}] ${p.name} (ราคา ฿${p.price}/${p.unit || 'ชิ้น'} | หมวด: ${p.categoryName || p.category}): ${p.description} [Tags: ${(p.tags || []).join(', ')}] [คงเหลือ: ${p.stock || 20}]`
   ).join('\n');
 
   const fewShotText = (trainingExamples || [])
@@ -484,19 +484,29 @@ ${fewShotText ? `## 💡 ตัวอย่างคำตอบที่แอ�
 
 ---
 
-## 🎯 หน้าที่ของคุณในการตอบลูกค้า:
-1. วิเคราะห์ข้อความของลูกค้าอย่างลึกซึ้ง (เข้าใจอารมณ์, ความต้องการ, งบประมาณ หรือสถานการณ์)
-2. ร่างคำตอบภาษาไทยในฐานะ "น้องพร้อมเสิร์ฟ" (สุภาพ น่ารัก อบอุ่น มีอีโมจิ 2-3 บรรทัด)
-3. หากคำถามเกี่ยวข้องกับสินค้าหรือสามารถแนะนำสินค้าได้ ให้เลือก Product ID ที่ตรงใจลูกค้าที่สุด 1-4 รายการจากแคตตาล็อก
-4. ส่งผลลัพธ์กลับมาเป็น JSON ตามรูปแบบนี้เท่านั้น (ห้ามใส่ markdown \`\`\`json หรือข้อความอื่น):
+## 🎯 กฎเหล็กและข้อกำหนดในการตอบลูกค้า (Strict Grounding Rules):
+1. คุณคือ "น้องพร้อมเสิร์ฟ" แอดมินสาวน้อยน่ารัก ใจดี เป็นกันเอง แห่งร้านค้าสวัสดิการกองทุนหมู่บ้านวังไฮ จ.ลำพูน (อู้คำเมืองได้นิดหน่อยน่ารักๆ สุภาพ อบอุ่น มีอีโมจิ 2-3 ตัว)
+2. **ตอบภายใต้ข้อมูลและสินค้าที่มีในร้านเท่านั้น (Strict Store Grounding)**:
+   - ห้ามกุเรื่องหรือคิดสินค้า/บริการที่ไม่มีในร้านขึ้นมาเองเด็ดขาด
+   - หากลูกค้าถามหาสิ่งที่ร้านไม่มี (เช่น ชาเขียวชงสด, ชานมไข่มุก, กาแฟสด, พิซซ่า, ส้มตำ ฯลฯ) ให้แจ้งปฏิเสธอย่างสุภาพน่ารักว่าร้านยังไม่มีเมนูดังกล่าว แล้วนำเสนอสินค้าใกล้เคียงที่มีในร้าน (เช่น ขนมโบราณ 90s, กาแฟโบราณ, ลูกอมซาสี่, ของดี OTOP) แทน
+   - หากลูกค้าถามเรื่องงบประมาณ (เช่น มี 50 บาท, 100 บาท อยากได้หลายชิ้น หรืออยากได้ชุดของขวัญ) ให้เลือกสินค้าจริงจากแคตตาล็อกที่มีราคาและจำนวนตรงตามที่ลูกค้าต้องการ พร้อมคำนวณราคารวมให้ชัดเจน
+   - หากลูกค้าถามเรื่องโปรโมชั่น/ส่งฟรี/ที่ตั้ง/เวลาเปิดปิด ให้ตอบตามข้อมูลในเอกสารร้านค้า (ส่งฟรีเมื่อครบ 300 บาท, ถ้าไม่ถึง 300 บาท คิดค่าส่ง 35 บาท, ร้านเปิด 07:00-20:00 น. ที่ทำการกองทุนหมู่บ้านวังไฮ ต.วังไฮ อ.เมือง จ.ลำพูน)
+   - หากลูกค้าชวนคุย แสดงอารมณ์ เครียด เหงา เศร้า อกหัก หรือถามคำถามทั่วไป ให้คุยอย่างเป็นกันเอง ปลอบใจ และชวนทานขนม/ของดีในร้านเพื่อเติมพลังใจ
+3. **ส่งผลลัพธ์กลับมาเป็น JSON ตามรูปแบบนี้เท่านั้น (ห้ามใส่ markdown หรือข้อความอื่นนอก JSON)**:
 {
-  "replyText": "ข้อความคำตอบที่อบอุ่นและตรงประเด็น...",
+  "replyText": "ข้อความคำตอบจากน้องพร้อมเสิร์ฟที่สร้างสรรค์และตอบตรงประเด็น (สุภาพ น่ารัก อบอุ่น มีอีโมจิ 2-3 บรรทัด)",
   "recommendedProductIds": ["TRAD-01", "TRAD-02"],
   "intent": "snack_recommendation"
 }
 `;
 
-  const models = ['gemini-2.5-flash', 'gemini-1.5-flash', 'gemini-2.0-flash'];
+  const models = [
+    'gemini-flash-lite-latest',
+    'gemini-3.5-flash',
+    'gemini-3-flash-preview',
+    'gemini-3.1-flash-lite',
+    'gemini-flash-latest'
+  ];
 
   if (apiKey) {
     for (const model of models) {
@@ -514,8 +524,9 @@ ${fewShotText ? `## 💡 ตัวอย่างคำตอบที่แอ�
               }
             ],
             generationConfig: {
-              temperature: 0.7,
-              maxOutputTokens: 600
+              temperature: 0.6,
+              maxOutputTokens: 600,
+              responseMimeType: 'application/json'
             }
           })
         });
@@ -535,100 +546,11 @@ ${fewShotText ? `## 💡 ตัวอย่างคำตอบที่แอ�
     }
   }
 
-  // Smart Semantic Agent (Zero-Keyword Intelligent Understanding)
-  const lowerQ = userMessage.toLowerCase();
-  let matched = [];
-  let replyText = 'ยินดีให้บริการค่ะ 😊 น้องพร้อมเสิร์ฟยินดีแนะนำขนมไทยโบราณ 90s และสินค้า OTOP คุณภาพจากชุมชนบ้านวังไฮ จ.ลำพูน ค่ะ 🍬🌾';
-  let intent = 'general_inquiry';
-
-  // 1. ถามที่ตั้งร้าน / เวลาเปิดปิด / พิกัด
-  if (
-    lowerQ.includes('ร้านอยู่') || 
-    lowerQ.includes('ที่อยู่') || 
-    lowerQ.includes('ที่ไหน') || 
-    lowerQ.includes('พิกัด') || 
-    lowerQ.includes('เปิดกี่โมง') ||
-    lowerQ.includes('แผนที่')
-  ) {
-    replyText = '🏡 ร้านค้าสวัสดิการกองทุนหมู่บ้านวังไฮ ตั้งอยู่ที่ทำการกองทุนหมู่บ้านวังไฮ ต.วังไฮ อ.เมือง จ.ลำพูน เปิดบริการทุกวัน 07:00 - 20:00 น. หรือกดสั่งซื้อผ่านระบบออนไลน์พร้อมจัดส่งด่วนถึงบ้านได้ตลอด 24 ชม. เลยนะคะ 🚚✨';
-    intent = 'store_location';
-  } 
-  // 2. ถามหาเครื่องดื่มที่ไม่มี เช่น ชาเขียว, ชานม, ชาไทย, กาแฟสด
-  else if (lowerQ.includes('ชาเขียว') || lowerQ.includes('ชานม') || lowerQ.includes('ชาไทย') || lowerQ.includes('กาแฟสด') || lowerQ.includes('โกโก้')) {
-    replyText = 'ขออภัยด้วยนะคะคุณลูกค้า ตอนนี้ทางร้านยังไม่มีเมนูชาเขียว/ชงสดค่ะ 🍵 แต่เรามีลูกอมซาสี่ซ่าๆ กาแฟโบราณ และขนมหวานโบราณยุค 90s ทานคู่กันอร่อยสดชื่นพร้อมส่งนะคะ 🍬✨';
-    matched = products.filter(p => p.category === 'retro-snacks' || p.name.includes('ซาสี่')).slice(0, 3);
-    intent = 'drink_inquiry_out_of_scope';
-  }
-  // 3. ขอเมนูอื่น / ไม่ซ้ำกับรายการก่อนหน้า
-  else if (lowerQ.includes('ไม่ซ้ำ') || lowerQ.includes('เมนูอื่น') || lowerQ.includes('อย่างอื่น') || lowerQ.includes('เซ็ตอื่น')) {
-    matched = products.filter(p => !['TRAD-01'].includes(p.id) && Number(p.price) <= 40).slice(0, 4);
-    replyText = 'จัดให้เลยค่ะ! 🍭 เซ็ตขนมและของดีวังไฮชุดใหม่ไม่ซ้ำเดิมในงบ 100 บาท: ทองม้วนกะทิสด (40฿) + ข้าวแต๋นน้ำแตงโม (35฿) + ขนมผิงอบควันเทียน (25฿) รวม 100 บาทพอดีเป๊ะ อร่อยเพลินไม่ซ้ำใครแน่นอนค่ะ 💖';
-    intent = 'alternative_recommendation';
-  }
-  // 4. มีงบจำกัด + อยากได้เยอะๆ / ไปฝากที่บ้าน
-  else if (lowerQ.includes('เยอะ') || (lowerQ.includes('ฝาก') && (lowerQ.includes('100') || lowerQ.includes('งบ')))) {
-    matched = products.filter(p => Number(p.price) <= 25).slice(0, 4);
-    replyText = 'งบ 100 บาทอยากได้จำนวนชิ้นเยอะๆ คุ้มๆ น้องพร้อมเสิร์ฟจัดเซ็ต 4 ชิ้นเต็มถุงให้เลยค่ะ: ขนมจาจา (20฿) + ตังเมไม้ (20฿) + ขนมโอเดงยา (25฿) + ขนมผิง (25฿) รวม 90 บาท เหลือเงินทอน 10 บาท ได้ขนมเต็มถุงไปฝากคนที่บ้านแน่นอนค่ะ 🛍️✨';
-    intent = 'bulk_budget_gift';
-  }
-  // 5. มีงบจำกัด / ระบุจำนวนเงินทั่วไป (เช่น 40 บาท, 50 บาท, งบประหยัด)
-  else if (lowerQ.match(/(\d+)\s*บาท/) || lowerQ.includes('งบ') || lowerQ.includes('มีตังค์') || lowerQ.includes('มีเงิน')) {
-    const budgetMatch = lowerQ.match(/(\d+)\s*บาท/) || lowerQ.match(/งบ\s*(\d+)/) || lowerQ.match(/มีเงิน\s*(\d+)/) || lowerQ.match(/มีตังค์\s*(\d+)/);
-    const maxBudget = budgetMatch ? parseInt(budgetMatch[1]) : 50;
-    matched = products.filter(p => Number(p.price) <= maxBudget && (p.category === 'retro-snacks' || p.category === 'otop')).slice(0, 4);
-    if (matched.length === 0) matched = products.filter(p => Number(p.price) <= maxBudget).slice(0, 4);
-    
-    replyText = `งบ ${maxBudget} บาท อิ่มอร่อยสบายกระเป๋าแน่นอนค่ะ! 🍭 น้องพร้อมเสิร์ฟขอแนะนำเซ็ตขนมโบราณ 90s ราคาสบายกระเป๋า เลือกช้อปได้ตามใจชอบด้านล่างนี้เลยนะคะ 💖`;
-    intent = 'budget_recommendation';
-  }
-  // 6. โปรส่งฟรี / ค่าจัดส่ง
-  else if (lowerQ.includes('ส่งฟรี') || lowerQ.includes('ค่าส่ง') || lowerQ.includes('กี่บาทส่งฟรี') || lowerQ.includes('ส่งของยังไง')) {
-    replyText = 'ร้านเรามีโปรโมชั่นพิเศษ! จัดส่งด่วนฟรีทั่วไทยทันทีเมื่อสั่งซื้อครบ 300 บาทขึ้นไปค่ะ (ถ้ายอดไม่ถึง 300 บาท คิดค่าจัดส่งเหมาจ่ายเพียง 35 บาท) จัดส่งทุกวันจันทร์-เสาร์ค่ะ 🚚💨';
-    intent = 'shipping_inquiry';
-  } 
-  // 7. อารมณ์ / ปัญหาชีวิต / อกหัก / เครียด / เศร้า
-  else if (lowerQ.includes('อกหัก') || lowerQ.includes('เครียด') || lowerQ.includes('เศร้า') || lowerQ.includes('ท้อ') || lowerQ.includes('เสียใจ')) {
-    replyText = 'โอ๋ๆ กอดๆ นะคะ 🥺 เวลาเครียดหรือเศร้า ให้ของหวานอร่อยๆ และกล้วยเบรคแตกช่วยเยียวยาหัวใจนะคะ น้องคัดขนมหวานย้อนวัยมาเติมพลังใจให้ค่ะ 💖';
-    matched = products.filter(p => p.category === 'retro-snacks' || p.name.includes('กล้วย') || p.name.includes('ทองม้วน')).slice(0, 3);
-    intent = 'emotional_comfort';
-  } 
-  // 8. ของฝาก / แม่ยาย / ผู้ใหญ่ / ไหว้พระ / ทำบุญ
-  else if (lowerQ.includes('ของฝาก') || lowerQ.includes('แม่ยาย') || lowerQ.includes('ผู้ใหญ่') || lowerQ.includes('ของขวัญ') || lowerQ.includes('ทำบุญ')) {
-    replyText = 'สำหรับของฝากผู้ใหญ่และคนพิเศษ แนะนำของดีบ้านวังไฮ "ข้าวหอมมะลิอินทรีย์แท้" และ "น้ำผึ้งป่าเดือนห้าธรรมชาติ 100%" สุขภาพดี ประทับใจแน่นอนค่ะ 🌾✨';
-    matched = products.filter(p => p.category === 'otop' || p.name.includes('น้ำผึ้ง') || p.name.includes('ข้าว')).slice(0, 3);
-    intent = 'gift_recommendation';
-  }
-  // 9. ถามหาขนมโอเดงยา / การ์ดพลัง / ของเล่น 90s
-  else if (lowerQ.includes('โอเดงยา') || lowerQ.includes('การ์ด') || lowerQ.includes('จาจา') || lowerQ.includes('บ้านกระดาษ')) {
-    replyText = 'มีพร้อมส่งเลยค่ะ! 🍬 ขนมโอเดงยาแถมการ์ดพลังระดับตำนาน และขนมจาจาแถมบ้านกระดาษ ของแท้ สดใหม่ กรอบอร่อย สั่งซื้อทางนี้ได้เลยนะคะ!';
-    matched = products.filter(p => p.id === 'TRAD-01' || p.id === 'TRAD-02' || p.category === 'retro-snacks').slice(0, 3);
-    intent = 'nostalgia_snacks';
-  } 
-  // 10. OTOP / สินค้าชุมชน / สุขภาพ / เบาหวาน
-  else if (lowerQ.includes('otop') || lowerQ.includes('วังไฮ') || lowerQ.includes('สุขภาพ') || lowerQ.includes('เบาหวาน') || lowerQ.includes('ข้าวกล้อง')) {
-    replyText = 'สินค้าเพื่อสุขภาพและ OTOP ของแท้จากภูมิปัญญาชาวบ้านวังไฮ ข้าวกล้องอินทรีย์ดัชนีน้ำตาลต่ำ และน้ำผึ้งป่าแท้ พร้อมส่งถึงบ้านค่ะ 🌿✨';
-    matched = products.filter(p => p.category === 'otop').slice(0, 3);
-    intent = 'otop_health_inquiry';
-  } 
-  // 11. ถามหาสินค้าที่ไม่มีในร้าน (เช่น พิซซ่า, ชาไข่มุก)
-  else if (lowerQ.includes('พิซซ่า') || lowerQ.includes('ชาไข่มุก') || lowerQ.includes('ส้มตำ')) {
-    replyText = 'ขออภัยนะคะ ทางร้านยังไม่มีเมนูดังกล่าวค่ะ แต่เรามีขนมไทยโบราณยุค 90s ทานเล่นเพลินๆ และของดีชุมชนวังไฮพร้อมจัดส่งให้อร่อยถึงบ้านเลยนะคะ 🍭🌾';
-    matched = products.filter(p => p.isFeatured).slice(0, 3);
-    intent = 'out_of_scope_query';
-  }
-  // 9. ค้นหาทั่วไป
-  else {
-    matched = products.filter(p => 
-      lowerQ.includes(p.name.toLowerCase()) || 
-      (p.tags && p.tags.some(t => lowerQ.includes(t.toLowerCase())))
-    );
-    if (matched.length === 0) matched = products.filter(p => p.isFeatured).slice(0, 3);
-  }
-
+  // Graceful fallback when AI API is unavailable
   return {
-    replyText,
-    recommendedProductIds: matched.map(p => p.id),
-    intent
+    replyText: 'ยินดีต้อนรับสู่ร้านค้าสวัสดิการกองทุนหมู่บ้านวังไฮเจ้า 😊 น้องพร้อมเสิร์ฟยินดีให้บริการขนมโบราณ 90s และสินค้า OTOP คุณภาพ ช้อปง่ายส่งไวถึงบ้านเลยนะคะ 🍬🌾',
+    recommendedProductIds: (products || []).filter(p => p.isFeatured).slice(0, 3).map(p => p.id),
+    intent: 'fallback_greeting'
   };
 }
 
