@@ -225,6 +225,46 @@ export const storeRepo = {
   },
 
   // ==========================================
+  // 🔑 Gemini API Key Configuration
+  // ==========================================
+  async getGeminiApiKey() {
+    if (isSupabaseConfigured && supabase) {
+      try {
+        const { data } = await supabase
+          .from('ai_rules')
+          .select('answer')
+          .eq('id', 'GEMINI_API_KEY_CONFIG')
+          .single();
+        if (data?.answer) return data.answer;
+      } catch (e) {}
+    }
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('wanghai_gemini_api_key');
+      if (saved) return saved;
+    }
+    return process.env.GEMINI_API_KEY || '';
+  },
+
+  async saveGeminiApiKey(key) {
+    if (isSupabaseConfigured && supabase) {
+      try {
+        await supabase.from('ai_rules').upsert({
+          id: 'GEMINI_API_KEY_CONFIG',
+          topic: 'GEMINI_API_KEY',
+          question_pattern: 'API_KEY',
+          answer: (key || '').trim(),
+          is_active: true,
+          updated_at: new Date().toISOString()
+        });
+      } catch (e) {}
+    }
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('wanghai_gemini_api_key', (key || '').trim());
+    }
+    return (key || '').trim();
+  },
+
+  // ==========================================
   // 📖 Store Knowledge Base (.md) Methods (Real-time Cloud Sync)
   // ==========================================
   async getStoreKnowledge() {

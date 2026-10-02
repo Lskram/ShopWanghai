@@ -84,19 +84,24 @@ export default function AdminDashboard() {
   const [knowledgeText, setKnowledgeText] = useState(DEFAULT_STORE_KNOWLEDGE);
   const [savingKnowledge, setSavingKnowledge] = useState(false);
 
+  // Gemini API Key State
+  const [geminiKeyInput, setGeminiKeyInput] = useState('');
+  const [savingKey, setSavingKey] = useState(false);
+
   // Chat Log Correction State
   const [editingLog, setEditingLog] = useState(null);
   const [correctionText, setCorrectionText] = useState('');
 
   const loadAllData = async () => {
     setLoading(true);
-    const [prods, cols, ords, rules, logs, knowledge] = await Promise.all([
+    const [prods, cols, ords, rules, logs, knowledge, apiKey] = await Promise.all([
       storeRepo.getProducts(),
       storeRepo.getCollections(),
       storeRepo.getOrders(),
       storeRepo.getAiRules(),
       storeRepo.getChatLogs(),
-      storeRepo.getStoreKnowledge()
+      storeRepo.getStoreKnowledge(),
+      storeRepo.getGeminiApiKey()
     ]);
     setProducts(prods);
     setCollections(cols);
@@ -104,6 +109,7 @@ export default function AdminDashboard() {
     setAiRules(rules);
     setChatLogs(logs);
     if (knowledge) setKnowledgeText(knowledge);
+    if (apiKey) setGeminiKeyInput(apiKey);
     setLoading(false);
   };
 
@@ -116,6 +122,18 @@ export default function AdminDashboard() {
       alert('❌ บันทึกไม่สำเร็จ: ' + e.message);
     } finally {
       setSavingKnowledge(false);
+    }
+  };
+
+  const handleSaveGeminiKey = async () => {
+    setSavingKey(true);
+    try {
+      await storeRepo.saveGeminiApiKey(geminiKeyInput);
+      alert('✅ บันทึก Gemini API Key เรียบร้อยแล้ว!\nสมองกล AI น้องพร้อมเสิร์ฟจะเริ่มทำงานเต็มประสิทธิภาพทันทีค่ะ 🧠✨');
+    } catch (e) {
+      alert('❌ บันทึกไม่สำเร็จ: ' + e.message);
+    } finally {
+      setSavingKey(false);
     }
   };
 
@@ -738,6 +756,45 @@ export default function AdminDashboard() {
                     <span>{savingKnowledge ? 'กำลังบันทึก...' : '💾 บันทึกกฎเหล็ก AI'}</span>
                   </button>
                 </div>
+              </div>
+            </div>
+
+            {/* GEMINI API KEY ACTIVATION CARD */}
+            <div className="bg-white p-4 sm:p-5 rounded-3xl border border-indigo-100 shadow-sm flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+              <div className="flex items-start gap-3">
+                <div className="w-9 h-9 rounded-xl bg-indigo-100 text-indigo-700 flex items-center justify-center shrink-0 font-bold">
+                  🔑
+                </div>
+                <div>
+                  <h4 className="text-xs sm:text-sm font-bold text-slate-900 flex items-center gap-2">
+                    <span>Google Gemini AI API Key (สมองกลประมวลผลอัจฉริยะ)</span>
+                    <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${
+                      geminiKeyInput.startsWith('AIzaSy') ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'
+                    }`}>
+                      {geminiKeyInput.startsWith('AIzaSy') ? 'เชื่อมต่อสมบูรณ์ 🟢' : 'รอใส่ Key (AIzaSy...) 🟡'}
+                    </span>
+                  </h4>
+                  <p className="text-[11px] text-slate-500 mt-0.5">
+                    สมัครรับ API Key ฟรีได้ที่ <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noreferrer" className="text-indigo-600 underline font-bold">aistudio.google.com</a> (คีย์ขึ้นต้นด้วย AIzaSy...)
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2 w-full md:w-auto">
+                <input
+                  type="password"
+                  value={geminiKeyInput}
+                  onChange={(e) => setGeminiKeyInput(e.target.value)}
+                  placeholder="วาง AIzaSy... ที่นี่"
+                  className="w-full md:w-72 p-2.5 text-xs font-mono border border-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 focus:outline-none"
+                />
+                <button
+                  onClick={handleSaveGeminiKey}
+                  disabled={savingKey}
+                  className="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs rounded-xl shadow-sm shrink-0"
+                >
+                  {savingKey ? 'กำลังบันทึก...' : 'บันทึก Key'}
+                </button>
               </div>
             </div>
 

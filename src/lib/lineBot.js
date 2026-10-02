@@ -461,8 +461,8 @@ export function createContactFlexMessage(storeUrl = DEFAULT_STORE_URL) {
 /**
  * Modern AI Agent Engine powered by Gemini LLM + Knowledge Base (.md) + Live Catalog (RAG)
  */
-async function callModernAiAgent({ userMessage, knowledgeBase, products, trainingExamples }) {
-  const apiKey = process.env.GEMINI_API_KEY || '';
+async function callModernAiAgent({ userMessage, knowledgeBase, products, trainingExamples, geminiApiKey }) {
+  const apiKey = (geminiApiKey || process.env.GEMINI_API_KEY || '').trim();
   const catalogSummary = (products || []).map(p => 
     `- [ID: ${p.id}] ${p.name} (ราคา ฿${p.price}/${p.unit || 'ชิ้น'} | หมวด: ${p.categoryName || p.category}): ${p.description} [Tags: ${(p.tags || []).join(', ')}]`
   ).join('\n');
@@ -629,20 +629,23 @@ export async function handleLineMessage(userMessage, storeUrl = DEFAULT_STORE_UR
     return [createContactFlexMessage(storeUrl)];
   }
 
-  // 1. Fetch live products, knowledge base, and training examples from database
+  // 1. Fetch live products, knowledge base, training examples, and API key from database
   let products = [];
   let knowledgeBase = DEFAULT_STORE_KNOWLEDGE;
   let chatLogs = [];
+  let geminiApiKey = process.env.GEMINI_API_KEY || '';
 
   try {
-    const [p, k, l] = await Promise.all([
+    const [p, k, l, customKey] = await Promise.all([
       storeRepo.getProducts(),
       storeRepo.getStoreKnowledge(),
-      storeRepo.getChatLogs()
+      storeRepo.getChatLogs(),
+      storeRepo.getGeminiApiKey()
     ]);
     if (p && p.length > 0) products = p;
     if (k) knowledgeBase = k;
     if (l && l.length > 0) chatLogs = l;
+    if (customKey) geminiApiKey = customKey;
   } catch (e) {
     console.warn('Data loading error in lineBot:', e);
   }
@@ -654,7 +657,8 @@ export async function handleLineMessage(userMessage, storeUrl = DEFAULT_STORE_UR
     userMessage: query,
     knowledgeBase,
     products,
-    trainingExamples: chatLogs.filter(l => l.rating === 'good' || l.admin_correction)
+    trainingExamples: chatLogs.filter(l => l.rating === 'good' || l.admin_correction),
+    geminiApiKey
   });
 
   const replyMessages = [
