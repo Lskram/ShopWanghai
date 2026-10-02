@@ -59,23 +59,24 @@ ${catalogText}
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-            contents: [{ parts: [{ text: prompt }] }],
-            generationConfig: {
-              temperature: 0.7,
-              maxOutputTokens: 600
-            }
-          })
-        });
+              contents: [{ parts: [{ text: prompt }] }],
+              generationConfig: {
+                temperature: 0.7,
+                maxOutputTokens: 600
+              }
+            })
+          });
 
-        if (res.ok) {
-          const data = await res.json();
-          const rawText = data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
-          const cleanedText = rawText.replace(/```json/g, '').replace(/```/g, '').trim();
-          aiResult = JSON.parse(cleanedText);
-          if (aiResult?.suggestedAnswer) break;
+          if (res.ok) {
+            const data = await res.json();
+            const rawText = data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
+            const cleanedText = rawText.replace(/```json/g, '').replace(/```/g, '').trim();
+            aiResult = JSON.parse(cleanedText);
+            if (aiResult?.suggestedAnswer) break;
+          }
+        } catch(e) {
+          // try next model
         }
-      } catch(e) {
-        // try next model
       }
     }
 

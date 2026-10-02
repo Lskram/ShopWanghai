@@ -25,9 +25,14 @@ import {
   HelpCircle,
   Bot,
   Lightbulb,
-  ExternalLink
+  ExternalLink,
+  BookOpen,
+  Save,
+  FileText,
+  Code
 } from 'lucide-react';
 import { INITIAL_CATEGORIES, INITIAL_COLLECTIONS } from '../../data/mockProducts';
+import { DEFAULT_STORE_KNOWLEDGE } from '../../data/storeKnowledge';
 import { storeRepo, isSupabaseConfigured } from '../../lib/supabase';
 
 export default function AdminDashboard() {
@@ -75,25 +80,43 @@ export default function AdminDashboard() {
     is_active: true
   });
 
+  // Store Knowledge Base (.md) State
+  const [knowledgeText, setKnowledgeText] = useState(DEFAULT_STORE_KNOWLEDGE);
+  const [savingKnowledge, setSavingKnowledge] = useState(false);
+
   // Chat Log Correction State
   const [editingLog, setEditingLog] = useState(null);
   const [correctionText, setCorrectionText] = useState('');
 
   const loadAllData = async () => {
     setLoading(true);
-    const [prods, cols, ords, rules, logs] = await Promise.all([
+    const [prods, cols, ords, rules, logs, knowledge] = await Promise.all([
       storeRepo.getProducts(),
       storeRepo.getCollections(),
       storeRepo.getOrders(),
       storeRepo.getAiRules(),
-      storeRepo.getChatLogs()
+      storeRepo.getChatLogs(),
+      storeRepo.getStoreKnowledge()
     ]);
     setProducts(prods);
     setCollections(cols);
     setOrders(ords);
     setAiRules(rules);
     setChatLogs(logs);
+    if (knowledge) setKnowledgeText(knowledge);
     setLoading(false);
+  };
+
+  const handleSaveKnowledge = async () => {
+    setSavingKnowledge(true);
+    try {
+      await storeRepo.saveStoreKnowledge(knowledgeText);
+      alert('✅ บันทึกคลังความรู้และกฎเหล็กของร้านเรียบร้อยแล้ว!\nน้องพร้อมเสิร์ฟใน LINE จะจำกฎใหม่นี้ทันทีค่ะ ✨');
+    } catch (e) {
+      alert('❌ บันทึกไม่สำเร็จ: ' + e.message);
+    } finally {
+      setSavingKnowledge(false);
+    }
   };
 
   useEffect(() => {
@@ -468,8 +491,8 @@ export default function AdminDashboard() {
             }`}
           >
             <Brain className="w-4 h-4 text-purple-600" />
-            <span className="text-purple-700">🧠 สอน AI & ประวัติแชท</span>
-            <span className="px-1.5 py-0.5 text-[10px] bg-purple-100 text-purple-800 rounded-full font-bold">ใหม่ ⭐</span>
+            <span className="text-purple-700">🧠 คลังความรู้ & ฝึกสอน AI (.md)</span>
+            <span className="px-1.5 py-0.5 text-[10px] bg-purple-100 text-purple-800 rounded-full font-bold">Modern AI ⭐</span>
           </button>
 
           <button
@@ -678,131 +701,112 @@ export default function AdminDashboard() {
         )}
 
         {/* ======================================================== */}
-        {/* TAB 2: AI TRAINING & CHAT LOGS (NEW!) */}
+        {/* TAB 2: AI KNOWLEDGE BASE & TRAINING (MODERN GENERATIVE AI) */}
         {/* ======================================================== */}
         {activeTab === 'ai_training' && (
           <div className="space-y-6">
             {/* Top Guide Banner */}
-            <div className="bg-gradient-to-r from-purple-900 to-indigo-900 rounded-3xl p-6 text-white shadow-lg">
+            <div className="bg-gradient-to-r from-purple-900 via-indigo-900 to-slate-900 rounded-3xl p-6 text-white shadow-xl border border-purple-800/50">
               <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
                 <div className="space-y-1.5">
                   <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-purple-500/30 text-purple-200 text-xs font-bold border border-purple-400/30">
                     <Sparkles className="w-3.5 h-3.5 text-amber-300" />
-                    <span>ระบบฝึกฝน AI น้องพร้อมเสิร์ฟ (@237ipknp)</span>
+                    <span>ระบบสมองกล AI น้องพร้อมเสิร์ฟ (Modern Generative AI Agent + RAG)</span>
                   </div>
-                  <h2 className="text-xl sm:text-2xl font-black font-heading">
-                    สอนความรู้ & จัดการคำตอบ AI ประจำร้าน
+                  <h2 className="text-xl sm:text-2xl font-black font-heading flex items-center gap-2">
+                    <span>คลังความรู้ & กฎเหล็กของร้าน (Knowledge Base .md)</span>
                   </h2>
-                  <p className="text-xs sm:text-sm text-purple-200 max-w-2xl">
-                    พิมพ์สอนข้อมูลร้าน นโยบายส่งฟรี หรือเรื่องราว OTOP เพิ่มเติม เมื่อบันทึกแล้ว น้องพร้อมเสิร์ฟใน LINE จะจำและนำไปตอบลูกค้าได้ทันทีโดยไม่ต้องเขียนโค้ด!
+                  <p className="text-xs sm:text-sm text-purple-200 max-w-3xl leading-relaxed">
+                    น้องพร้อมเสิร์ฟใน LINE ใช้สมองกล Gemini AI ทำความเข้าใจความหมาย (Semantic Understanding) ร่วมกับแคตตาล็อกสินค้าจริงและกฎร้านค้าด้านล่างนี้ โดยที่คุณ<strong>ไม่ต้องมานั่งดักคีย์เวิร์ดทีละคำอีกต่อไป!</strong>
                   </p>
                 </div>
-                <button
-                  onClick={() => handleOpenRuleModal()}
-                  className="px-4 py-2.5 bg-amber-400 hover:bg-amber-300 text-slate-900 font-bold text-xs rounded-xl shadow-md flex items-center gap-1.5 shrink-0 transition-transform active:scale-95"
-                >
-                  <Plus className="w-4 h-4" />
-                  <span>+ เพิ่มความรู้ใหม่ให้ AI</span>
-                </button>
-              </div>
-            </div>
-
-            {/* TOP KEYWORDS TRENDS WIDGET */}
-            <div className="bg-white p-4 rounded-2xl border border-purple-100 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-              <div className="flex items-center gap-2 shrink-0">
-                <span className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
-                  <Sparkles className="w-4 h-4 text-purple-600" />
-                  <span>🔥 เทรนด์คีย์เวิร์ดที่ลูกค้าถามบ่อย:</span>
-                </span>
-              </div>
-              <div className="flex flex-wrap items-center gap-1.5 flex-1">
-                {(() => {
-                  const counts = {};
-                  chatLogs.forEach(l => (l.extracted_keywords || []).forEach(k => { counts[k] = (counts[k] || 0) + 1; }));
-                  const sorted = Object.entries(counts).sort((a,b) => b[1] - a[1]).slice(0, 8);
-                  if (sorted.length === 0) return <span className="text-xs text-slate-400">ยังไม่มีข้อมูลสถิติ</span>;
-                  return sorted.map(([k, c]) => (
-                    <span key={k} className="inline-flex items-center gap-1 text-[11px] font-bold bg-purple-50 text-purple-800 border border-purple-200 px-2.5 py-1 rounded-lg">
-                      <span>#{k}</span>
-                      <span className="bg-purple-200 text-purple-900 text-[9px] px-1.5 py-0.2 rounded-full">{c}</span>
-                    </span>
-                  ));
-                })()}
-              </div>
-            </div>
-
-            {/* SECTION 1: AI Knowledge Rules Cards */}
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <h3 className="text-sm font-bold text-slate-800 flex items-center gap-2">
-                  <Lightbulb className="w-4 h-4 text-amber-500" />
-                  <span>คลังความรู้ & กฎการตอบเฉพาะร้าน ({aiRules.length} หัวข้อ)</span>
-                </h3>
-                <span className="text-[11px] text-slate-500">บอทจะนำข้อมูลเหล่านี้ไปประกอบการตอบใน LINE ทันที</span>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {aiRules.map(rule => (
-                  <div 
-                    key={rule.id}
-                    className={`p-4 rounded-2xl border transition-all ${
-                      rule.is_active 
-                        ? 'bg-white border-purple-200 shadow-sm' 
-                        : 'bg-slate-50 border-slate-200 opacity-60'
-                    }`}
+                <div className="flex items-center gap-2 shrink-0">
+                  <button
+                    onClick={handleSaveKnowledge}
+                    disabled={savingKnowledge}
+                    className="px-5 py-2.5 bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-slate-950 font-black text-xs rounded-xl shadow-lg flex items-center gap-2 transition-transform active:scale-95"
                   >
-                    <div className="flex items-start justify-between gap-2 mb-2">
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs font-bold text-purple-900 bg-purple-100 px-2.5 py-0.5 rounded-lg">
-                          {rule.topic}
-                        </span>
-                        <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${
-                          rule.is_active ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-200 text-slate-600'
-                        }`}>
-                          {rule.is_active ? '🟢 ใช้งานอยู่' : '⚪ ปิดใช้งาน'}
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <button
-                          onClick={() => handleOpenRuleModal(rule)}
-                          className="p-1 text-slate-400 hover:text-blue-600 rounded"
-                          title="แก้ไข"
-                        >
-                          <Edit className="w-3.5 h-3.5" />
-                        </button>
-                        <button
-                          onClick={() => handleDeleteRule(rule.id)}
-                          className="p-1 text-slate-400 hover:text-rose-600 rounded"
-                          title="ลบ"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
-                      </div>
-                    </div>
+                    <Save className="w-4 h-4 text-slate-950" />
+                    <span>{savingKnowledge ? 'กำลังบันทึก...' : '💾 บันทึกกฎเหล็ก AI'}</span>
+                  </button>
+                </div>
+              </div>
+            </div>
 
-                    <div className="text-[11px] text-slate-500 mb-2">
-                      <strong className="text-slate-700">🔍 คีย์เวิร์ดที่ดักจับ: </strong>
-                      <span className="font-mono text-purple-700 bg-purple-50 px-1.5 py-0.5 rounded">
-                        {rule.question_pattern}
-                      </span>
-                    </div>
-
-                    <div className="text-xs text-slate-800 bg-slate-50 p-3 rounded-xl border border-slate-100 mb-3 leading-relaxed">
-                      <strong className="text-emerald-700">💬 คำตอบของน้องพร้อมเสิร์ฟ: </strong>
-                      {rule.answer}
-                    </div>
-
-                    <div className="flex items-center justify-between text-[11px] pt-1 border-t border-slate-100">
-                      <button
-                        onClick={() => handleToggleRuleActive(rule)}
-                        className="text-xs font-semibold text-purple-700 hover:underline"
-                      >
-                        {rule.is_active ? 'ปิดการใช้งานชั่วคราว' : 'เปิดใช้งานกฎนี้'}
-                      </button>
-                      <span className="text-[10px] text-slate-400">ID: {rule.id}</span>
-                    </div>
+            {/* SECTION 1: STORE KNOWLEDGE BASE (MARKDOWN EDITOR) */}
+            <div className="bg-white rounded-3xl border border-purple-100 shadow-sm overflow-hidden">
+              <div className="p-4 sm:p-5 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-slate-50/70">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-8 h-8 rounded-xl bg-purple-100 text-purple-800 flex items-center justify-center font-bold">
+                    <BookOpen className="w-4 h-4" />
                   </div>
-                ))}
+                  <div>
+                    <h3 className="text-sm font-bold text-slate-900">
+                      เอกสารกฎระเบียบและนโยบายร้านค้า (Store Playbook Markdown)
+                    </h3>
+                    <p className="text-[11px] text-slate-500">
+                      แก้ไขข้อความภาษาไทยธรรมดา เพื่อสอนโปรโมชั่น เงื่อนไขค่าส่ง หรือบุคลิกภาพของบอท
+                    </p>
+                  </div>
+                </div>
+
+                {/* Quick Insert Snippets */}
+                <div className="flex flex-wrap items-center gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (confirm('ต้องการโหลดเนื้อหากฎมาตรฐานเริ่มต้นหรือไม่?')) {
+                        setKnowledgeText(DEFAULT_STORE_KNOWLEDGE);
+                      }
+                    }}
+                    className="px-2.5 py-1 bg-white hover:bg-slate-100 text-slate-600 border border-slate-200 rounded-lg text-[11px] font-bold transition-colors"
+                  >
+                    🔄 รีเซ็ตค่าเริ่มต้น
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setKnowledgeText(prev => prev + '\n- **โปรโมชั่นพิเศษ**: สั่งซื้อสินค้า OTOP ครบ 500 บาท แถมฟรี ขนมผิงโบราณ 1 ซอง!');
+                    }}
+                    className="px-2.5 py-1 bg-purple-50 hover:bg-purple-100 text-purple-700 border border-purple-200 rounded-lg text-[11px] font-bold transition-colors"
+                  >
+                    + เพิ่มโปรแถมขนม
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setKnowledgeText(prev => prev + '\n- **รอบจัดส่งด่วนพิเศษ**: มีรอบส่งพิเศษวันอาทิตย์ช่วงเช้า 10:00 น.');
+                    }}
+                    className="px-2.5 py-1 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 rounded-lg text-[11px] font-bold transition-colors"
+                  >
+                    + เพิ่มรอบส่งวันอาทิตย์
+                  </button>
+                </div>
+              </div>
+
+              {/* Textarea Editor */}
+              <div className="p-4 sm:p-5">
+                <textarea
+                  value={knowledgeText}
+                  onChange={(e) => setKnowledgeText(e.target.value)}
+                  rows={14}
+                  placeholder="เขียนกฎร้านค้า นโยบายส่งฟรี หรือเรื่องราวสินค้าที่นี่..."
+                  className="w-full p-4 font-mono text-xs text-slate-800 bg-slate-900/5 hover:bg-slate-900/10 focus:bg-white border border-slate-200 rounded-2xl focus:ring-2 focus:ring-purple-500 focus:outline-none leading-relaxed resize-y transition-all"
+                />
+                <div className="mt-3 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs text-slate-500">
+                  <div className="flex items-center gap-2">
+                    <span className="inline-block w-2 h-2 rounded-full bg-emerald-500"></span>
+                    <span>AI จะอ่านเอกสารนี้แบบ Real-time ร่วมกับสต็อกสินค้าจริง 100%</span>
+                  </div>
+                  <button
+                    onClick={handleSaveKnowledge}
+                    disabled={savingKnowledge}
+                    className="px-4 py-1.5 bg-purple-700 hover:bg-purple-800 text-white font-bold rounded-xl flex items-center justify-center gap-1.5 shadow-sm transition-all"
+                  >
+                    <Save className="w-3.5 h-3.5" />
+                    <span>{savingKnowledge ? 'กำลังบันทึก...' : 'บันทึกการเปลี่ยนแปลง'}</span>
+                  </button>
+                </div>
               </div>
             </div>
 

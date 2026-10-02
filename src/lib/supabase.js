@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import { INITIAL_PRODUCTS, INITIAL_CATEGORIES, INITIAL_COLLECTIONS } from '../data/mockProducts.js';
+import { DEFAULT_STORE_KNOWLEDGE } from '../data/storeKnowledge.js';
 
 const DEFAULT_SUPABASE_URL = 'https://ecehmprfledkftkcyrnp.supabase.co';
 const DEFAULT_SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVjZWhtcHJmbGVka2Z0a2N5cm5wIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTA5MzAzNzMsImV4cCI6MjEwNjUwNjM3M30.TOrUQ7pyoOQRpbRV_PlXZPH_GkMkPwCzWAjQdpUibhQ';
@@ -14,7 +15,7 @@ export const supabase = isSupabaseConfigured
   ? createClient(supabaseUrl, supabaseAnonKey)
   : null;
 
-const DATA_VERSION = 'v2.2_ai_training_and_logs';
+const DATA_VERSION = 'v2.3_modern_ai_agent';
 
 export const INITIAL_AI_RULES = [
   {
@@ -221,6 +222,41 @@ export const storeRepo = {
       return JSON.parse(localStorage.getItem('wanghai_orders') || '[]');
     }
     return [];
+  },
+
+  // ==========================================
+  // 📖 Store Knowledge Base (.md) Methods
+  // ==========================================
+  async getStoreKnowledge() {
+    if (isSupabaseConfigured && supabase) {
+      try {
+        const { data, error } = await supabase.from('settings').select('value').eq('key', 'store_knowledge').single();
+        if (!error && data?.value) return data.value;
+      } catch (e) {}
+    }
+
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('wanghai_store_knowledge');
+      if (saved) return saved;
+    }
+    return DEFAULT_STORE_KNOWLEDGE;
+  },
+
+  async saveStoreKnowledge(markdownContent) {
+    if (isSupabaseConfigured && supabase) {
+      try {
+        await supabase.from('settings').upsert({
+          key: 'store_knowledge',
+          value: markdownContent,
+          updated_at: new Date().toISOString()
+        });
+      } catch (e) {}
+    }
+
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('wanghai_store_knowledge', markdownContent);
+    }
+    return markdownContent;
   },
 
   // ==========================================
