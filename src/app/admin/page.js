@@ -237,6 +237,8 @@ export default function AdminDashboard() {
     await loadAllData();
   };
 
+  const [inquiryFilter, setInquiryFilter] = useState('all'); // 'all' | 'orders' | 'retro' | 'otop' | 'untrained' | 'trained'
+
   const handleConvertLogToRule = (log) => {
     const kws = log.extracted_keywords || [];
     const patterns = [log.user_query, ...kws].filter(Boolean).join(', ');
@@ -249,6 +251,59 @@ export default function AdminDashboard() {
       is_active: true
     });
     setIsRuleModalOpen(true);
+  };
+
+  const handleSimulateCustomerInquiry = async (scenario = 'order_snack') => {
+    let queryText = '';
+    let defaultResponse = '';
+    let intent = 'general';
+
+    if (scenario === 'order_snack') {
+      queryText = 'อยากสั่งซื้อเซ็ตขนมโบราณ 90s โอเดงยา 3 ซอง กับ ขนมจาจา 2 กล่อง ส่งด่วนที่เชียงใหม่ค่ะ รวมกี่บาทคะ';
+      defaultResponse = 'ยินดีเลยค่ะ! 🍭 เซ็ตขนมโอเดงยา (ซองละ 25฿) + ขนมจาจา (กล่องละ 20฿) มีสินค้าพร้อมส่งค่ะ ยอดรวม 115 บาท ส่งด่วน 35 บาท รวม 150 บาท สั่งผ่านเว็บหรือแจ้งที่อยู่จัดส่งได้เลยนะคะ 📦';
+      intent = 'order_inquiry';
+    } else if (scenario === 'order_otop') {
+      queryText = 'สนใจสั่งน้ำผึ้งป่าเดือนห้า 2 ขวด กับข้าวหอมมะลิอินทรีย์ 1 ถุง มีโปรส่งฟรีไหมคะ';
+      defaultResponse = 'มีโปรส่งฟรีแน่นอนค่ะ! 🌾 เมื่อสั่งซื้อครบ 300 บาทขึ้นไป ร้านส่งฟรีด่วนทั่วไทยทันทีค่ะ สินค้า OTOP ของแท้จากชุมชนวังไฮพร้อมจัดส่งค่ะ ✨';
+      intent = 'order_inquiry';
+    } else if (scenario === 'health_query') {
+      queryText = 'ผู้สูงอายุเป็นเบาหวาน ทานขนมอะไรของที่ร้านได้บ้างคะ แนะนำหน่อย';
+      defaultResponse = 'สำหรับผู้รักสุขภาพและผู้สูงอายุ แนะนำ ข้าวกล้องหอมมะลิอินทรีย์ดัชนีน้ำตาลต่ำ และกล้วยตากพลังงานแสงอาทิตย์ 100% ไม่เติมน้ำตาลค่ะ 🌿';
+      intent = 'health_diet';
+    } else {
+      queryText = 'มีขนมโอเดงยาที่แถมการ์ดพลังรุ่นพิเศษไหมคะ อยากสะสมให้ครบเซ็ต';
+      defaultResponse = 'มีพร้อมส่งเลยค่ะ! 🎮 ขนมโอเดงยาทุกซองแถมการ์ดพลังในตำนาน สดใหม่ กรอบอร่อย สั่งซื้อได้เลยนะคะ!';
+      intent = 'nostalgia_toys';
+    }
+
+    const { extractKeywords } = await import('../../lib/lineBot.js');
+    const extractedKw = extractKeywords(queryText);
+
+    await storeRepo.saveChatLog({
+      user_query: queryText,
+      extracted_keywords: extractedKw,
+      bot_response: defaultResponse,
+      matched_intent: intent,
+      rating: 'unrated'
+    });
+
+    await loadAllData();
+  };
+
+  const handleQuickCreateOrderFromInquiry = async (log) => {
+    const newOrder = {
+      customerName: 'ลูกค้าสั่งผ่าน LINE OA',
+      phone: '08X-XXX-XXXX',
+      address: 'จัดส่งตามที่อยู่ที่แจ้งใน LINE',
+      items: [
+        { id: 'TRAD-01', name: 'ขนมไทยโบราณ / สินค้าชุมชนวังไฮ', price: 150, quantity: 1 }
+      ],
+      total: 150,
+      note: `สร้างอัตโนมัติจากคำถามลูกค้า: "${log.user_query}"`
+    };
+    await storeRepo.createOrder(newOrder);
+    alert('✅ สร้างรายการคำสั่งซื้อจากแชทลูกค้าเรียบร้อยแล้ว! ตรวจสอบได้ที่แท็บ "คำสั่งซื้อ"');
+    await loadAllData();
   };
 
   // Filtered products
@@ -717,127 +772,219 @@ export default function AdminDashboard() {
 
             {/* SECTION 2: Chat Logs & Few-Shot Classroom */}
             <div className="space-y-3 pt-4">
-              <div className="flex items-center justify-between">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div>
                   <h3 className="text-sm font-bold text-slate-800 flex items-center gap-2">
                     <MessageSquare className="w-4 h-4 text-blue-500" />
-                    <span>ประวัติคำถามลูกค้า & ห้องเรียน Few-Shot Training ({chatLogs.length} บทสนทนา)</span>
+                    <span>กล่องรวมคำถามลูกค้า & ห้องเรียน Few-Shot Training ({chatLogs.length} บทสนทนา)</span>
                   </h3>
                   <p className="text-[11px] text-slate-500 mt-0.5">
-                    กดยกนิ้วโป้ง 👍 ให้คำตอบที่ดี เพื่อให้ AI ใช้เป็น "ตัวอย่างข้อสอบ" หรือกด ✏️ เพื่อแก้ไขคำตอบที่ถูกต้อง
+                    รวมทุกคำถามที่ลูกค้าทักเข้ามาใน LINE สามารถกดแปลงเป็นกฎ AI หรือเปิดบิลคำสั่งซื้อได้ทันที
                   </p>
                 </div>
-                <button
-                  onClick={loadAllData}
-                  className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl flex items-center gap-1"
-                >
-                  <RefreshCw className="w-3.5 h-3.5" />
-                  <span>รีเฟรชประวัติ</span>
-                </button>
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={loadAllData}
+                    className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl flex items-center gap-1"
+                  >
+                    <RefreshCw className="w-3.5 h-3.5" />
+                    <span>รีเฟรชประวัติ</span>
+                  </button>
+                </div>
               </div>
 
+              {/* SIMULATION ACTION BAR */}
+              <div className="bg-gradient-to-r from-blue-50 via-indigo-50 to-purple-50 p-3.5 rounded-2xl border border-blue-200 flex flex-col md:flex-row items-start md:items-center justify-between gap-2.5">
+                <div className="flex items-center gap-2">
+                  <Bot className="w-4 h-4 text-indigo-600" />
+                  <span className="text-xs font-bold text-indigo-950">
+                    🎲 เครื่องมือจำลองคำถามลูกค้า (Simulate Inbound Queries):
+                  </span>
+                </div>
+                <div className="flex flex-wrap items-center gap-1.5 w-full md:w-auto">
+                  <button
+                    onClick={() => handleSimulateCustomerInquiry('order_snack')}
+                    className="px-2.5 py-1 bg-white hover:bg-indigo-600 hover:text-white text-indigo-800 border border-indigo-200 rounded-lg text-[11px] font-bold shadow-xs transition-all"
+                  >
+                    + จำลอง: ลูกค้าสั่งขนม 90s
+                  </button>
+                  <button
+                    onClick={() => handleSimulateCustomerInquiry('order_otop')}
+                    className="px-2.5 py-1 bg-white hover:bg-emerald-600 hover:text-white text-emerald-800 border border-emerald-200 rounded-lg text-[11px] font-bold shadow-xs transition-all"
+                  >
+                    + จำลอง: ลูกค้าสั่ง OTOP
+                  </button>
+                  <button
+                    onClick={() => handleSimulateCustomerInquiry('health_query')}
+                    className="px-2.5 py-1 bg-white hover:bg-purple-600 hover:text-white text-purple-800 border border-purple-200 rounded-lg text-[11px] font-bold shadow-xs transition-all"
+                  >
+                    + จำลอง: ถามเรื่องสุขภาพ
+                  </button>
+                </div>
+              </div>
+
+              {/* INQUIRY CATEGORY FILTERS */}
+              <div className="flex flex-wrap items-center gap-1.5 pt-1">
+                {[
+                  { id: 'all', label: `💬 ทั้งหมด (${chatLogs.length})` },
+                  { id: 'orders', label: `🛒 สนใจสั่งซื้อ (${chatLogs.filter(l => l.user_query.includes('สั่ง') || l.matched_intent === 'order_inquiry').length})` },
+                  { id: 'retro', label: `🍭 ขนมโบราณ (${chatLogs.filter(l => l.user_query.includes('ขนม') || l.user_query.includes('90') || l.user_query.includes('โอเดงยา')).length})` },
+                  { id: 'otop', label: `🌾 สินค้า OTOP (${chatLogs.filter(l => l.user_query.includes('otop') || l.user_query.includes('ข้าว') || l.user_query.includes('น้ำผึ้ง')).length})` },
+                  { id: 'untrained', label: `⏳ รอดำเนินการสอน AI (${chatLogs.filter(l => l.rating !== 'good' && !l.admin_correction).length})` },
+                  { id: 'trained', label: `⭐ บันทึกสอน AI แล้ว (${chatLogs.filter(l => l.rating === 'good' || l.admin_correction).length})` }
+                ].map(tab => (
+                  <button
+                    key={tab.id}
+                    onClick={() => setInquiryFilter(tab.id)}
+                    className={`px-3 py-1 text-xs rounded-xl font-bold border transition-all ${
+                      inquiryFilter === tab.id
+                        ? 'bg-purple-700 text-white border-purple-700 shadow-sm'
+                        : 'bg-white text-slate-600 border-slate-200 hover:bg-slate-50'
+                    }`}
+                  >
+                    {tab.label}
+                  </button>
+                ))}
+              </div>
+
+              {/* INQUIRIES LIST */}
               <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
                 <div className="divide-y divide-slate-100">
-                  {chatLogs.map(log => {
-                    const isGood = log.rating === 'good';
-                    const hasCorrection = Boolean(log.admin_correction);
+                  {(() => {
+                    const filtered = chatLogs.filter(log => {
+                      if (inquiryFilter === 'orders') return log.matched_intent === 'order_inquiry' || log.user_query.includes('สั่ง') || log.user_query.includes('กี่บาท');
+                      if (inquiryFilter === 'retro') return log.user_query.includes('ขนม') || log.user_query.includes('90') || log.user_query.includes('โอเดงยา') || log.user_query.includes('จาจา');
+                      if (inquiryFilter === 'otop') return log.user_query.includes('otop') || log.user_query.includes('ข้าว') || log.user_query.includes('น้ำผึ้ง') || log.user_query.includes('วังไฮ');
+                      if (inquiryFilter === 'trained') return log.rating === 'good' || Boolean(log.admin_correction);
+                      if (inquiryFilter === 'untrained') return log.rating !== 'good' && !log.admin_correction;
+                      return true;
+                    });
 
-                    return (
-                      <div key={log.id} className="p-4 hover:bg-slate-50/70 transition-colors">
-                        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 mb-2">
-                          <div className="flex items-center gap-2">
-                            <span className="font-mono text-[10px] text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded">
-                              {log.id}
-                            </span>
-                            <span className="text-[10px] font-bold text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded-full border border-indigo-100">
-                              {log.matched_intent || 'general'}
-                            </span>
-                            {isGood && (
-                              <span className="text-[10px] font-bold text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded-full flex items-center gap-1">
-                                <CheckCircle className="w-3 h-3" />
-                                <span>ตัวอย่างการสอน AI ⭐</span>
+                    if (filtered.length === 0) {
+                      return (
+                        <div className="p-8 text-center text-slate-400 text-xs">
+                          ไม่พบรายการคำถามในหมวดหมู่นี้
+                        </div>
+                      );
+                    }
+
+                    return filtered.map(log => {
+                      const isGood = log.rating === 'good';
+                      const hasCorrection = Boolean(log.admin_correction);
+                      const isOrderRelated = log.user_query.includes('สั่ง') || log.matched_intent === 'order_inquiry' || log.user_query.includes('ซื้อ');
+
+                      return (
+                        <div key={log.id} className="p-4 hover:bg-slate-50/70 transition-colors">
+                          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 mb-2">
+                            <div className="flex items-center gap-2">
+                              <span className="font-mono text-[10px] text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded">
+                                {log.id}
                               </span>
+                              <span className="text-[10px] font-bold text-indigo-700 bg-indigo-50 px-2 py-0.5 rounded-full border border-indigo-100">
+                                {log.matched_intent || 'general'}
+                              </span>
+                              {isOrderRelated && (
+                                <span className="text-[10px] font-bold text-emerald-800 bg-emerald-100 px-2 py-0.5 rounded-full border border-emerald-200">
+                                  🛒 สนใจสั่งซื้อ
+                                </span>
+                              )}
+                              {isGood && (
+                                <span className="text-[10px] font-bold text-purple-800 bg-purple-100 px-2 py-0.5 rounded-full flex items-center gap-1">
+                                  <CheckCircle className="w-3 h-3" />
+                                  <span>ตัวอย่างการสอน AI ⭐</span>
+                                </span>
+                              )}
+                            </div>
+                            <span className="text-[10px] text-slate-400">
+                              {new Date(log.created_at).toLocaleString('th-TH')}
+                            </span>
+                          </div>
+
+                          {/* Customer Question */}
+                          <div className="flex items-start gap-2 mb-1.5">
+                            <span className="text-xs font-bold text-slate-700 shrink-0">👤 คำถามลูกค้า:</span>
+                            <span className="text-xs font-bold text-purple-900 bg-purple-50 px-2 py-1 rounded-lg">
+                              "{log.user_query}"
+                            </span>
+                          </div>
+
+                          {/* Extracted Keywords Badges */}
+                          {log.extracted_keywords && log.extracted_keywords.length > 0 && (
+                            <div className="flex flex-wrap items-center gap-1 mb-2 ml-1">
+                              <span className="text-[10px] text-slate-400 font-bold">🏷️ คีย์เวิร์ดที่สกัดได้:</span>
+                              {log.extracted_keywords.map((kw, i) => (
+                                <span key={i} className="text-[10px] bg-purple-100 text-purple-800 font-semibold px-2 py-0.5 rounded-md">
+                                  #{kw}
+                                </span>
+                              ))}
+                            </div>
+                          )}
+
+                          {/* Bot Answer */}
+                          <div className="flex items-start gap-2 mb-2">
+                            <span className="text-xs font-bold text-emerald-700 shrink-0">🤖 บอทตอบ:</span>
+                            <span className="text-xs text-slate-700 leading-relaxed">
+                              {log.bot_response}
+                            </span>
+                          </div>
+
+                          {/* Admin Correction (if exists) */}
+                          {hasCorrection && (
+                            <div className="text-xs bg-amber-50 text-amber-900 p-2.5 rounded-xl border border-amber-200 mb-2">
+                              <strong className="text-amber-800">✍️ คำตอบที่แอดมินแก้ไข (ใช้เทรน AI): </strong>
+                              {log.admin_correction}
+                            </div>
+                          )}
+
+                          {/* Action buttons */}
+                          <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-slate-100 text-xs">
+                            <div className="flex flex-wrap items-center gap-1.5">
+                              <button
+                                onClick={() => handleRateLog(log.id, isGood ? 'unrated' : 'good')}
+                                className={`px-2.5 py-1 rounded-lg font-bold flex items-center gap-1 transition-all ${
+                                  isGood
+                                    ? 'bg-purple-600 text-white shadow-sm'
+                                    : 'bg-slate-100 text-slate-600 hover:bg-purple-50 hover:text-purple-700'
+                                }`}
+                              >
+                                <ThumbsUp className="w-3.5 h-3.5" />
+                                <span>{isGood ? 'เป็นตัวอย่างสอน AI แล้ว' : 'ใช้เป็นตัวอย่างสอน AI'}</span>
+                              </button>
+
+                              <button
+                                onClick={() => {
+                                  setEditingLog(log);
+                                  setCorrectionText(log.admin_correction || log.bot_response);
+                                }}
+                                className="px-2.5 py-1 bg-slate-100 hover:bg-blue-50 text-slate-600 hover:text-blue-700 rounded-lg font-bold flex items-center gap-1"
+                              >
+                                <Edit className="w-3.5 h-3.5" />
+                                <span>สอนคำตอบใหม่</span>
+                              </button>
+
+                              <button
+                                onClick={() => handleConvertLogToRule(log)}
+                                className="px-2.5 py-1 bg-purple-100 hover:bg-purple-200 text-purple-800 rounded-lg font-bold flex items-center gap-1 shadow-sm"
+                              >
+                                <Sparkles className="w-3.5 h-3.5 text-purple-600" />
+                                <span>⚡ แปลงเป็นกฎ AI ทันที</span>
+                              </button>
+                            </div>
+
+                            {isOrderRelated && (
+                              <button
+                                onClick={() => handleQuickCreateOrderFromInquiry(log)}
+                                className="px-2.5 py-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg font-bold flex items-center gap-1 shadow-xs ml-auto"
+                              >
+                                <ShoppingBag className="w-3.5 h-3.5" />
+                                <span>🛒 เปิดบิลคำสั่งซื้อ</span>
+                              </button>
                             )}
                           </div>
-                          <span className="text-[10px] text-slate-400">
-                            {new Date(log.created_at).toLocaleString('th-TH')}
-                          </span>
                         </div>
-
-                        {/* Customer Question */}
-                        <div className="flex items-start gap-2 mb-1.5">
-                          <span className="text-xs font-bold text-slate-700 shrink-0">👤 คำถามลูกค้า:</span>
-                          <span className="text-xs font-bold text-purple-900 bg-purple-50 px-2 py-1 rounded-lg">
-                            "{log.user_query}"
-                          </span>
-                        </div>
-
-                        {/* Extracted Keywords Badges */}
-                        {log.extracted_keywords && log.extracted_keywords.length > 0 && (
-                          <div className="flex flex-wrap items-center gap-1 mb-2 ml-1">
-                            <span className="text-[10px] text-slate-400 font-bold">🏷️ คีย์เวิร์ดที่สกัดได้:</span>
-                            {log.extracted_keywords.map((kw, i) => (
-                              <span key={i} className="text-[10px] bg-purple-100 text-purple-800 font-semibold px-2 py-0.5 rounded-md">
-                                #{kw}
-                              </span>
-                            ))}
-                          </div>
-                        )}
-
-                        {/* Bot Answer */}
-                        <div className="flex items-start gap-2 mb-2">
-                          <span className="text-xs font-bold text-emerald-700 shrink-0">🤖 บอทตอบ:</span>
-                          <span className="text-xs text-slate-700 leading-relaxed">
-                            {log.bot_response}
-                          </span>
-                        </div>
-
-                        {/* Admin Correction (if exists) */}
-                        {hasCorrection && (
-                          <div className="text-xs bg-amber-50 text-amber-900 p-2.5 rounded-xl border border-amber-200 mb-2">
-                            <strong className="text-amber-800">✍️ คำตอบที่แอดมินแก้ไข (ใช้เทรน AI): </strong>
-                            {log.admin_correction}
-                          </div>
-                        )}
-
-                        {/* Action buttons */}
-                        <div className="flex items-center justify-between pt-2 border-t border-slate-100 text-xs">
-                          <div className="flex items-center gap-2">
-                            <button
-                              onClick={() => handleRateLog(log.id, isGood ? 'unrated' : 'good')}
-                              className={`px-2.5 py-1 rounded-lg font-bold flex items-center gap-1 transition-all ${
-                                isGood
-                                  ? 'bg-emerald-600 text-white shadow-sm'
-                                  : 'bg-slate-100 text-slate-600 hover:bg-emerald-50 hover:text-emerald-700'
-                              }`}
-                            >
-                              <ThumbsUp className="w-3.5 h-3.5" />
-                              <span>{isGood ? 'เป็นตัวอย่างสอน AI แล้ว' : 'ใช้เป็นตัวอย่างสอน AI'}</span>
-                            </button>
-
-                            <button
-                              onClick={() => {
-                                setEditingLog(log);
-                                setCorrectionText(log.admin_correction || log.bot_response);
-                              }}
-                              className="px-2.5 py-1 bg-slate-100 hover:bg-blue-50 text-slate-600 hover:text-blue-700 rounded-lg font-bold flex items-center gap-1"
-                            >
-                              <Edit className="w-3.5 h-3.5" />
-                              <span>สอนคำตอบใหม่</span>
-                            </button>
-
-                            <button
-                              onClick={() => handleConvertLogToRule(log)}
-                              className="px-2.5 py-1 bg-purple-100 hover:bg-purple-200 text-purple-800 rounded-lg font-bold flex items-center gap-1 shadow-sm"
-                            >
-                              <Sparkles className="w-3.5 h-3.5 text-purple-600" />
-                              <span>⚡ แปลงเป็นกฎ AI ทันที</span>
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  })}
+                      );
+                    });
+                  })()}
                 </div>
               </div>
             </div>
