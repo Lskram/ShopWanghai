@@ -237,6 +237,20 @@ export default function AdminDashboard() {
     await loadAllData();
   };
 
+  const handleConvertLogToRule = (log) => {
+    const kws = log.extracted_keywords || [];
+    const patterns = [log.user_query, ...kws].filter(Boolean).join(', ');
+    setEditingRule(null);
+    setRuleFormData({
+      topic: `คำถาม: ${log.user_query.slice(0, 30)}`,
+      question_pattern: patterns,
+      answer: log.admin_correction || log.bot_response || '',
+      recommended_product_ids: [],
+      is_active: true
+    });
+    setIsRuleModalOpen(true);
+  };
+
   // Filtered products
   const filteredProducts = products.filter(p => {
     const matchesCategory = categoryFilter === 'all' || p.category === categoryFilter;
@@ -602,6 +616,30 @@ export default function AdminDashboard() {
               </div>
             </div>
 
+            {/* TOP KEYWORDS TRENDS WIDGET */}
+            <div className="bg-white p-4 rounded-2xl border border-purple-100 shadow-sm flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+              <div className="flex items-center gap-2 shrink-0">
+                <span className="text-xs font-bold text-slate-800 flex items-center gap-1.5">
+                  <Sparkles className="w-4 h-4 text-purple-600" />
+                  <span>🔥 เทรนด์คีย์เวิร์ดที่ลูกค้าถามบ่อย:</span>
+                </span>
+              </div>
+              <div className="flex flex-wrap items-center gap-1.5 flex-1">
+                {(() => {
+                  const counts = {};
+                  chatLogs.forEach(l => (l.extracted_keywords || []).forEach(k => { counts[k] = (counts[k] || 0) + 1; }));
+                  const sorted = Object.entries(counts).sort((a,b) => b[1] - a[1]).slice(0, 8);
+                  if (sorted.length === 0) return <span className="text-xs text-slate-400">ยังไม่มีข้อมูลสถิติ</span>;
+                  return sorted.map(([k, c]) => (
+                    <span key={k} className="inline-flex items-center gap-1 text-[11px] font-bold bg-purple-50 text-purple-800 border border-purple-200 px-2.5 py-1 rounded-lg">
+                      <span>#{k}</span>
+                      <span className="bg-purple-200 text-purple-900 text-[9px] px-1.5 py-0.2 rounded-full">{c}</span>
+                    </span>
+                  ));
+                })()}
+              </div>
+            </div>
+
             {/* SECTION 1: AI Knowledge Rules Cards */}
             <div className="space-y-3">
               <div className="flex items-center justify-between">
@@ -786,6 +824,14 @@ export default function AdminDashboard() {
                             >
                               <Edit className="w-3.5 h-3.5" />
                               <span>สอนคำตอบใหม่</span>
+                            </button>
+
+                            <button
+                              onClick={() => handleConvertLogToRule(log)}
+                              className="px-2.5 py-1 bg-purple-100 hover:bg-purple-200 text-purple-800 rounded-lg font-bold flex items-center gap-1 shadow-sm"
+                            >
+                              <Sparkles className="w-3.5 h-3.5 text-purple-600" />
+                              <span>⚡ แปลงเป็นกฎ AI ทันที</span>
                             </button>
                           </div>
                         </div>
