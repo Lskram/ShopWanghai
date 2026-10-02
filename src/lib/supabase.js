@@ -225,13 +225,17 @@ export const storeRepo = {
   },
 
   // ==========================================
-  // 📖 Store Knowledge Base (.md) Methods
+  // 📖 Store Knowledge Base (.md) Methods (Real-time Cloud Sync)
   // ==========================================
   async getStoreKnowledge() {
     if (isSupabaseConfigured && supabase) {
       try {
-        const { data, error } = await supabase.from('settings').select('value').eq('key', 'store_knowledge').single();
-        if (!error && data?.value) return data.value;
+        const { data, error } = await supabase
+          .from('ai_rules')
+          .select('answer')
+          .eq('id', 'STORE_KNOWLEDGE_MD')
+          .single();
+        if (!error && data?.answer) return data.answer;
       } catch (e) {}
     }
 
@@ -245,12 +249,17 @@ export const storeRepo = {
   async saveStoreKnowledge(markdownContent) {
     if (isSupabaseConfigured && supabase) {
       try {
-        await supabase.from('settings').upsert({
-          key: 'store_knowledge',
-          value: markdownContent,
+        await supabase.from('ai_rules').upsert({
+          id: 'STORE_KNOWLEDGE_MD',
+          topic: 'MAIN_STORE_KNOWLEDGE_BASE',
+          question_pattern: 'STORE_KNOWLEDGE_MARKDOWN',
+          answer: markdownContent,
+          is_active: true,
           updated_at: new Date().toISOString()
         });
-      } catch (e) {}
+      } catch (e) {
+        console.error('Error saving store knowledge to Supabase:', e);
+      }
     }
 
     if (typeof window !== 'undefined') {
@@ -265,7 +274,11 @@ export const storeRepo = {
   async getAiRules() {
     if (isSupabaseConfigured && supabase) {
       try {
-        const { data, error } = await supabase.from('ai_rules').select('*').order('created_at', { ascending: false });
+        const { data, error } = await supabase
+          .from('ai_rules')
+          .select('*')
+          .neq('id', 'STORE_KNOWLEDGE_MD')
+          .order('created_at', { ascending: false });
         if (!error && data && data.length > 0) return data;
       } catch (e) {}
     }
