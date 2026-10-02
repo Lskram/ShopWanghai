@@ -1116,7 +1116,7 @@ export default function AdminDashboard() {
             </div>
 
             <div className="bg-slate-900 text-emerald-400 p-4 rounded-2xl font-mono text-xs overflow-x-auto space-y-2">
-              <div>PROJECT_URL: https://ecehmprffledkftkcyrnp.supabase.co</div>
+              <div>PROJECT_URL: https://ecehmprfledkftkcyrnp.supabase.co</div>
               <div>STATUS: {isSupabaseConfigured ? 'CONNECTED (ONLINE 🟢)' : 'LOCAL STORAGE FALLBACK (🟡)'}</div>
               <div>TABLES: products, collections, orders, ai_rules, chat_logs</div>
             </div>

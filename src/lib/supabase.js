@@ -1,8 +1,12 @@
 import { createClient } from '@supabase/supabase-js';
 import { INITIAL_PRODUCTS, INITIAL_CATEGORIES, INITIAL_COLLECTIONS } from '../data/mockProducts.js';
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
+const DEFAULT_SUPABASE_URL = 'https://ecehmprfledkftkcyrnp.supabase.co';
+const DEFAULT_SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImVjZWhtcHJmbGVka2Z0a2N5cm5wIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTA5MzAzNzMsImV4cCI6MjEwNjUwNjM3M30.TOrUQ7pyoOQRpbRV_PlXZPH_GkMkPwCzWAjQdpUibhQ';
+
+const rawUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || DEFAULT_SUPABASE_URL;
+const supabaseUrl = rawUrl.replace('ecehmprffledkftkcyrnp', 'ecehmprfledkftkcyrnp');
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || DEFAULT_SUPABASE_ANON_KEY;
 
 export const isSupabaseConfigured = Boolean(supabaseUrl && supabaseAnonKey && supabaseUrl.startsWith('https://'));
 
