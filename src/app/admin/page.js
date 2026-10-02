@@ -263,6 +263,14 @@ export default function AdminDashboard() {
   const [inquiryFilter, setInquiryFilter] = useState('all'); // 'all' | 'orders' | 'retro' | 'otop' | 'untrained' | 'trained'
   const [loadingAiLogId, setLoadingAiLogId] = useState(null);
 
+  const handleAppendToKnowledgeBase = (log) => {
+    const answer = log.admin_correction || log.bot_response || '';
+    const newSnippet = `\n- **คำถามพบบ่อย: "${log.user_query}"**: ${answer}`;
+    setKnowledgeText(prev => prev + newSnippet);
+    alert('✅ เพิ่มคำถามและคำตอบนี้เข้าไปยังกล่องคลังความรู้ Markdown (.md) เรียบร้อยแล้ว!\nอย่าลืมกดปุ่ม "💾 บันทึกกฎเหล็ก AI" ด้านบนเพื่อยืนยันนะคะ ✨');
+    window.scrollTo({ top: 400, behavior: 'smooth' });
+  };
+
   const handleConvertLogToRule = (log) => {
     const kws = log.extracted_keywords || [];
     const patterns = [log.user_query, ...kws].filter(Boolean).join(', ');
@@ -1012,11 +1020,11 @@ export default function AdminDashboard() {
                               </button>
 
                               <button
-                                onClick={() => handleConvertLogToRule(log)}
-                                className="px-2.5 py-1 bg-purple-100 hover:bg-purple-200 text-purple-800 rounded-lg font-bold flex items-center gap-1 shadow-sm"
+                                onClick={() => handleAppendToKnowledgeBase(log)}
+                                className="px-2.5 py-1 bg-purple-100 hover:bg-purple-200 text-purple-800 rounded-lg font-bold flex items-center gap-1 shadow-sm transition-all"
                               >
-                                <Sparkles className="w-3.5 h-3.5 text-purple-600" />
-                                <span>⚡ แปลงเป็นกฎ AI ทันที</span>
+                                <BookOpen className="w-3.5 h-3.5 text-purple-600" />
+                                <span>📝 เพิ่มเข้ากฎ Markdown (.md) ทันที</span>
                               </button>
                             </div>
 
