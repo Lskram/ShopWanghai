@@ -1,6 +1,3 @@
-import fs from 'fs';
-import path from 'path';
-
 export const DEFAULT_STORE_KNOWLEDGE = `# 🏪 คลังความรู้และกฎเหล็กประจำร้านค้าสวัสดิการกองทุนหมู่บ้านวังไฮ (@237ipknp)
 
 ## 👤 1. ตัวตนและบุคลิกภาพของ AI (Persona & Tone)
