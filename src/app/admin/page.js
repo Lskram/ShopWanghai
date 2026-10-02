@@ -238,6 +238,7 @@ export default function AdminDashboard() {
   };
 
   const [inquiryFilter, setInquiryFilter] = useState('all'); // 'all' | 'orders' | 'retro' | 'otop' | 'untrained' | 'trained'
+  const [loadingAiLogId, setLoadingAiLogId] = useState(null);
 
   const handleConvertLogToRule = (log) => {
     const kws = log.extracted_keywords || [];
@@ -251,6 +252,41 @@ export default function AdminDashboard() {
       is_active: true
     });
     setIsRuleModalOpen(true);
+  };
+
+  const handleAiSuggestAnswer = async (log) => {
+    setLoadingAiLogId(log.id);
+    try {
+      const res = await fetch('/api/ai-suggest', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          query: log.user_query,
+          keywords: log.extracted_keywords || []
+        })
+      });
+      const data = await res.json();
+      if (data?.data) {
+        const { topic, suggestedAnswer, suggestedProductIds } = data.data;
+        const kws = log.extracted_keywords || [];
+        const patterns = [log.user_query, ...kws].filter(Boolean).join(', ');
+        
+        setEditingRule(null);
+        setRuleFormData({
+          topic: topic || `คำถาม: ${log.user_query.slice(0, 30)}`,
+          question_pattern: patterns,
+          answer: suggestedAnswer,
+          recommended_product_ids: suggestedProductIds || [],
+          is_active: true
+        });
+        setIsRuleModalOpen(true);
+      }
+    } catch(e) {
+      console.error('Error suggesting answer:', e);
+      handleConvertLogToRule(log);
+    } finally {
+      setLoadingAiLogId(null);
+    }
   };
 
   const handleSimulateCustomerInquiry = async (scenario = 'order_snack') => {
@@ -960,6 +996,15 @@ export default function AdminDashboard() {
                               >
                                 <Edit className="w-3.5 h-3.5" />
                                 <span>สอนคำตอบใหม่</span>
+                              </button>
+
+                              <button
+                                onClick={() => handleAiSuggestAnswer(log)}
+                                disabled={loadingAiLogId === log.id}
+                                className="px-2.5 py-1 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white rounded-lg font-bold flex items-center gap-1 shadow-sm transition-all"
+                              >
+                                <Sparkles className={`w-3.5 h-3.5 text-amber-300 ${loadingAiLogId === log.id ? 'animate-spin' : ''}`} />
+                                <span>{loadingAiLogId === log.id ? 'AI กำลังคิดคำตอบ...' : '✨ ให้ AI คิดคำตอบจากร้านค้า'}</span>
                               </button>
 
                               <button
