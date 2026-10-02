@@ -2,6 +2,8 @@ import crypto from 'crypto';
 import { storeRepo } from './supabase.js';
 import { INITIAL_PRODUCTS, INITIAL_COLLECTIONS } from '../data/mockProducts.js';
 
+const DEFAULT_LINE_SECRET = 'fcd0db0af8330d9bd35a20616259d4bf';
+const DEFAULT_LINE_TOKEN = 'YWzK8zBn3WhDmPiBrn3VUP0WBZgCyqgs7m2pETTXOIhWpHdN13eHQS2Tb0RxHsFjoe0FH8tE3rWa0ncwX9Bp/gXW9mLunfui2go2FpzN967j5KhME6He9XxwJRsROOeLIHsOzUvJrPBdhbHPnp+f3AdB04t89/1O/w1cDnyilFU=';
 const LINE_REPLY_API = 'https://api.line.me/v2/bot/message/reply';
 const DEFAULT_STORE_URL = process.env.NEXT_PUBLIC_BASE_URL || 'https://shop-wanghai-o7qg.vercel.app';
 
@@ -9,13 +11,14 @@ const DEFAULT_STORE_URL = process.env.NEXT_PUBLIC_BASE_URL || 'https://shop-wang
  * Verify LINE Webhook Signature (HMAC-SHA256)
  */
 export function verifyLineSignature(rawBody, signature, channelSecret) {
-  if (!channelSecret) return true; // Bypass in local dev if not configured
+  const secret = channelSecret || process.env.LINE_CHANNEL_SECRET || DEFAULT_LINE_SECRET;
+  if (!secret) return true;
   if (!signature) return false;
 
   try {
     const hash = crypto
-      .createHmac('sha256', channelSecret)
-      .update(rawBody)
+      .createHmac('sha256', secret)
+      .update(Buffer.from(rawBody, 'utf8'))
       .digest('base64');
     return hash === signature;
   } catch (err) {
@@ -28,7 +31,7 @@ export function verifyLineSignature(rawBody, signature, channelSecret) {
  * Send Reply to LINE Messaging API
  */
 export async function sendLineReply(replyToken, messages, channelAccessToken) {
-  const token = channelAccessToken || process.env.LINE_CHANNEL_ACCESS_TOKEN;
+  const token = channelAccessToken || process.env.LINE_CHANNEL_ACCESS_TOKEN || DEFAULT_LINE_TOKEN;
   if (!token) {
     console.error('LINE_CHANNEL_ACCESS_TOKEN is missing');
     return false;
