@@ -544,13 +544,12 @@ export function createContactFlexMessage(storeUrl = DEFAULT_STORE_URL) {
 }
 
 /**
- * Call Google Gemini AI to analyze customer message & generate consultative selling responses
+ * Call Google Gemini AI with Contextual Bridge Prompting
  */
 async function callGeminiAi(prompt, geminiApiKey) {
   const apiKey = geminiApiKey || process.env.GEMINI_API_KEY;
   if (!apiKey) return null;
 
-  // Try standard models
   const models = ['gemini-2.5-flash', 'gemini-1.5-flash', 'gemini-2.0-flash'];
   
   for (const model of models) {
@@ -562,8 +561,8 @@ async function callGeminiAi(prompt, geminiApiKey) {
         body: JSON.stringify({
           contents: [{ parts: [{ text: prompt }] }],
           generationConfig: {
-            temperature: 0.7,
-            maxOutputTokens: 500
+            temperature: 0.75,
+            maxOutputTokens: 600
           }
         })
       });
@@ -582,7 +581,7 @@ async function callGeminiAi(prompt, geminiApiKey) {
 }
 
 /**
- * Main Message Router and Logic Handler
+ * Main Message Router and Logic Handler with Contextual Bridge
  */
 export async function handleLineMessage(userMessage, storeUrl = DEFAULT_STORE_URL) {
   const query = (userMessage || '').trim().toLowerCase();
@@ -598,12 +597,261 @@ export async function handleLineMessage(userMessage, storeUrl = DEFAULT_STORE_UR
     products = INITIAL_PRODUCTS;
   }
 
-  // 1. Follow / Greeting / Welcome Keywords
+  // ============================================================
+  // 1. Follow / Greeting / Welcome
+  // ============================================================
   if (!query || ['สวัสดี', 'หวัดดี', 'hello', 'hi', 'เริ่ม', 'menu', 'เมนู', 'ยินดีต้อนรับ'].includes(query)) {
     return [createWelcomeFlexMessage(storeUrl)];
   }
 
-  // 2. Retro Snacks Keywords
+  // ============================================================
+  // 2. Emotional & Lifestyle Contexts (อกหัก, ง่วงนอน, เบื่อ, หิว)
+  // ============================================================
+  
+  // 2.1 อกหัก / เศร้า / เครียด / เสียใจ -> แนะนำขนมหวานปลอบใจ
+  if (
+    query.includes('อกหัก') || 
+    query.includes('เศร้า') || 
+    query.includes('ร้องไห้') || 
+    query.includes('เสียใจ') || 
+    query.includes('เครียด') ||
+    query.includes('ท้อ')
+  ) {
+    const sweetItems = products.filter(p => 
+      p.category === 'retro-snacks' || 
+      p.tags?.some(t => t.includes('หวาน') || t.includes('ขนม')) ||
+      p.name.includes('กล้วย') ||
+      p.name.includes('ทองม้วน')
+    ).slice(0, 10);
+
+    const replyText = {
+      type: 'text',
+      text: 'โอ๋ๆ นะคะคนเก่ง 🥺 กอดๆ น้า เวลาเครียดหรือเศร้า ให้ของหวานอร่อยๆ ช่วยเยียวยาหัวใจนะคะ น้องพร้อมเสิร์ฟคัดขนมหวานย้อนวัย 90s และกล้วยเบรคแตกเคี้ยวเพลินๆ มาให้เติมพลังใจค่ะ ❤️',
+      quickReply: getQuickReplyItems()
+    };
+    return [replyText, createProductCarousel(sweetItems, storeUrl, '💖 ขนมหวานเยียวยาหัวใจ')];
+  }
+
+  // 2.2 ง่วงนอน / เพลีย / เหนื่อย / ไม่มีแรง -> แนะนำกาแฟ / ลูกอมซาสี่ซ่าๆ / เครื่องดื่ม
+  if (
+    query.includes('ง่วง') || 
+    query.includes('นอน') || 
+    query.includes('ตาจะปิด') || 
+    query.includes('เพลีย') || 
+    query.includes('เหนื่อย') ||
+    query.includes('ตาสว่าง')
+  ) {
+    const energyItems = products.filter(p => 
+      p.category === 'drinks' || 
+      p.name.includes('กาแฟ') || 
+      p.name.includes('ซาสี่') ||
+      p.name.includes('บ๊วย')
+    ).slice(0, 10);
+
+    const replyText = {
+      type: 'text',
+      text: 'ตาจะปิดแล้วใช่ไหมคะ 😴 แวะมาเติมความสดชื่นสักหน่อย! น้องแนะนำกาแฟโบราณหอมเข้ม หรือลูกอมซาสี่ซ่าส์ๆ เคี้ยวบ๊วยเปรี้ยวจี๊ด รับรองตาสว่างพร้อมลุยงานต่อแน่นอนค่ะ ⚡',
+      quickReply: getQuickReplyItems()
+    };
+    return [replyText, createProductCarousel(energyItems.length > 0 ? energyItems : products.slice(0, 8), storeUrl, '⚡ เติมพลัง สดชื่นตาสว่าง')];
+  }
+
+  // 2.3 เบื่อ / เหงาปาก / ปากว่าง / ไม่มีอะไรทำ -> ขนมเคี้ยวกรุบกรอบ
+  if (
+    query.includes('เบื่อ') || 
+    query.includes('เซ็ง') || 
+    query.includes('เหงาปาก') || 
+    query.includes('ปากว่าง') ||
+    query.includes('เคี้ยวเล่น')
+  ) {
+    const crunchItems = products.filter(p => 
+      p.category === 'retro-snacks' || 
+      p.category === 'snacks'
+    ).slice(0, 10);
+
+    const replyText = {
+      type: 'text',
+      text: 'ถ้าปากว่างจนเริ่มเบื่อ ลองหาอะไรกรุบกรอบเคี้ยวเพลินๆ ดูไหมคะ 😋 มีทั้งตังเมไม้กรอบ ขนมตุ๊บตั๊บ ข้าวแต๋นน้ำแตงโม เคี้ยวสนุกจนลืมเบื่อเลยค่ะ!',
+      quickReply: getQuickReplyItems()
+    };
+    return [replyText, createProductCarousel(crunchItems, storeUrl, '🍿 ขนมเคี้ยวเพลินแก้เบื่อ')];
+  }
+
+  // 2.4 หิว / หิวดึก / หาอะไรกินรองท้อง
+  if (
+    query.includes('หิว') || 
+    query.includes('หิวดึก') || 
+    query.includes('มื้อดึก') || 
+    query.includes('รองท้อง')
+  ) {
+    const mealItems = products.filter(p => 
+      p.category === 'dryfood' || 
+      p.name.includes('บะหมี่') || 
+      p.name.includes('ข้าว') ||
+      p.category === 'snacks'
+    ).slice(0, 10);
+
+    const replyText = {
+      type: 'text',
+      text: 'ท้องร้องแล้วใช่ไหมคะ 🍜 น้องพร้อมเสิร์ฟมีบะหมี่กึ่งสำเร็จรูปร้อนๆ ปลากระป๋อง และขนมรองท้องราคาประหยัด พร้อมส่งถึงมือคุณค่ะ!',
+      quickReply: getQuickReplyItems()
+    };
+    return [replyText, createProductCarousel(mealItems, storeUrl, '🍜 เมนูรองท้อง คลายหิว')];
+  }
+
+  // ============================================================
+  // 3. Special Occasions & Gifting (ไหว้พระ ทำบุญ ของฝาก ของขวัญ)
+  // ============================================================
+
+  // 3.1 ทำบุญ / ไหว้พระ / ถวายพระ / ใส่บาตร / วันพระ
+  if (
+    query.includes('ทำบุญ') || 
+    query.includes('ไหว้พระ') || 
+    query.includes('ถวายพระ') || 
+    query.includes('ใส่บาตร') || 
+    query.includes('วันพระ') ||
+    query.includes('สังฆทาน')
+  ) {
+    const meritItems = products.filter(p => 
+      p.collections?.includes('pantry-essentials') || 
+      p.name.includes('ข้าว') || 
+      p.name.includes('น้ำผึ้ง') ||
+      p.category === 'dryfood'
+    ).slice(0, 10);
+
+    const replyText = {
+      type: 'text',
+      text: 'ร่วมอนุโมทนาบุญด้วยนะคะ สาธุค่ะ 🙏✨ น้องแนะนำจัดชุดข้าวหอมมะลิใหม่อินทรีย์ น้ำผึ้งป่าเดือนห้าแท้ และของแห้งจำเป็น เหมาะสำหรับถวายพระและทำบุญตักบาตรมากๆ ค่ะ',
+      quickReply: getQuickReplyItems()
+    };
+    return [replyText, createProductCarousel(meritItems, storeUrl, '🙏✨ ชุดของชำคู่บุญ & ทำบุญ')];
+  }
+
+  // 3.2 ของฝาก / ผู้ใหญ่ / ของขวัญ / เยี่ยมญาติ / ปีใหม่
+  if (
+    query.includes('ของฝาก') || 
+    query.includes('ผู้ใหญ่') || 
+    query.includes('ของขวัญ') || 
+    query.includes('เยี่ยมญาติ') || 
+    query.includes('ปีใหม่') ||
+    query.includes('สงกรานต์')
+  ) {
+    const giftItems = products.filter(p => 
+      p.category === 'otop' || 
+      p.collections?.includes('wanghai-signature-otop') ||
+      p.name.includes('น้ำผึ้ง') ||
+      p.name.includes('ผ้าทอ') ||
+      p.name.includes('เปี๊ยะ')
+    ).slice(0, 10);
+
+    const replyText = {
+      type: 'text',
+      text: 'สำหรับของฝากผู้ใหญ่หรือของขวัญคนพิเศษ 🎁 แนะนำสินค้า OTOP Signature วังไฮ ค่ะ ทั้งน้ำผึ้งป่าเดือนห้า ผ้าทอมือย้อมคราม ขนมเปี๊ยะอบควันเทียน สวยงาม ทรงคุณค่า ผู้รับประทับใจแน่นอนค่ะ!',
+      quickReply: getQuickReplyItems()
+    };
+    return [replyText, createProductCarousel(giftItems, storeUrl, '🎁 ของฝาก OTOP วังไฮ ชั้นเลิศ')];
+  }
+
+  // ============================================================
+  // 4. Dietary & Health Constraints (เบาหวาน, หวานน้อย, สุขภาพ, เจ, มังสวิรัติ)
+  // ============================================================
+
+  // 4.1 สุขภาพ / เบาหวาน / หวานน้อย / ลดน้ำตาล / คลีน
+  if (
+    query.includes('เบาหวาน') || 
+    query.includes('หวานน้อย') || 
+    query.includes('ลดน้ำตาล') || 
+    query.includes('สุขภาพ') || 
+    query.includes('ไม่อ้วน') ||
+    query.includes('อินทรีย์')
+  ) {
+    const healthItems = products.filter(p => 
+      p.name.includes('ข้าวกล้อง') || 
+      p.name.includes('กล้วยตาก') || 
+      p.tags?.some(t => t.includes('อินทรีย์') || t.includes('ธรรมชาติ'))
+    ).slice(0, 10);
+
+    const replyText = {
+      type: 'text',
+      text: 'เพื่อสุขภาพที่ดี น้องพร้อมเสิร์ฟแนะนำ ข้าวกล้องหอมมะลิอินทรีย์ (ดัชนีน้ำตาลต่ำ) และ กล้วยตากพลังงานแสงอาทิตย์ หวานธรรมชาติแท้ 100% ไม่เติมน้ำตาล ไม่ใส่สารกันบูดค่ะ 🌿',
+      quickReply: getQuickReplyItems()
+    };
+    return [replyText, createProductCarousel(healthItems.length > 0 ? healthItems : products.slice(0, 6), storeUrl, '🌿 สินค้าสุขภาพ & อินทรีย์')];
+  }
+
+  // 4.2 เจ / มังสวิรัติ / วีแกน
+  if (
+    query.includes('เจ') || 
+    query.includes('มังสวิรัติ') || 
+    query.includes('มัง') || 
+    query.includes('วีแกน')
+  ) {
+    const veganItems = products.filter(p => 
+      p.name.includes('ข้าวแต๋น') || 
+      p.name.includes('ข้าวเกรียบว่าว') || 
+      p.name.includes('กล้วยเบรคแตก') ||
+      p.name.includes('ถั่วตัด') ||
+      p.name.includes('ตังเม')
+    ).slice(0, 10);
+
+    const replyText = {
+      type: 'text',
+      text: 'สายบุญทานได้สบายใจค่ะ 🌱 ขนมพื้นบ้านของเราอย่าง ข้าวแต๋นน้ำแตงโม, ข้าวควบย่าง, กล้วยเบรคแตก และขนมถั่วตัด ทำจากพืชธรรมชาติแท้ๆ ไม่มีส่วนผสมของเนื้อสัตว์ค่ะ',
+      quickReply: getQuickReplyItems()
+    };
+    return [replyText, createProductCarousel(veganItems, storeUrl, '🌱 ขนมเจ & มังสวิรัติ')];
+  }
+
+  // ============================================================
+  // 5. Nostalgia & Toys 90s (การ์ดพลัง, ของเล่น, บ้านกระดาษ)
+  // ============================================================
+  if (
+    query.includes('การ์ด') || 
+    query.includes('ของเล่น') || 
+    query.includes('บ้านกระดาษ') || 
+    query.includes('สติกเกอร์') || 
+    query.includes('ย้อนวัย') ||
+    query.includes('เด็กประถม')
+  ) {
+    const retroToyItems = products.filter(p => 
+      p.name.includes('โอเดงยา') || 
+      p.name.includes('จาจา') || 
+      p.name.includes('นกแก้ว') ||
+      p.category === 'retro-snacks'
+    ).slice(0, 10);
+
+    const replyText = {
+      type: 'text',
+      text: 'ย้อนวัยยุค 90s สุดคลาสสิก! 🎮 ขนมโอเดงยาแถมการ์ดพลังในตำนาน และขนมจาจ้าแถมบ้านต่อกระดาษ มีพร้อมส่งให้สะสมความทรงจำวัยเด็กแล้วค่ะ!',
+      quickReply: getQuickReplyItems()
+    };
+    return [replyText, createProductCarousel(retroToyItems, storeUrl, '🎮 ขนม 90s แถมของเล่นในตำนาน')];
+  }
+
+  // ============================================================
+  // 6. External / Unrelated Food (พิซซ่า, ชานม, ชาบู, สเต็ก, เบอร์เกอร์)
+  // ============================================================
+  if (
+    query.includes('พิซซ่า') || 
+    query.includes('ชานม') || 
+    query.includes('ชาบู') || 
+    query.includes('สเต็ก') || 
+    query.includes('เบอร์เกอร์') ||
+    query.includes('ซูชิ') ||
+    query.includes('หมูกระทะ')
+  ) {
+    const snackItems = products.filter(p => p.category === 'retro-snacks' || p.category === 'snacks').slice(0, 10);
+    const replyText = {
+      type: 'text',
+      text: 'แหม เมนูนี้ฟังแล้วน่ากินมากเลยค่ะ 🤤 แต่ร้านเราเป็นร้านค้าสวัสดิการชุมชน ไม่มีเมนูนั้นโดยตรงนะคะ มีเป็นขนมขบเคี้ยวและของกินเล่นอร่อยๆ ย้อนวัย ทานรองท้องเพลินๆ แทนได้ในราคาสบายกระเป๋าค่ะ 🛒',
+      quickReply: getQuickReplyItems()
+    };
+    return [replyText, createProductCarousel(snackItems, storeUrl, '🍪 ของว่างเคี้ยวเพลินทดแทน')];
+  }
+
+  // ============================================================
+  // 7. General Retro Snacks Category
+  // ============================================================
   if (
     query.includes('ขนม') ||
     query.includes('โบราณ') ||
@@ -631,13 +879,14 @@ export async function handleLineMessage(userMessage, storeUrl = DEFAULT_STORE_UR
     return [greetingText, carousel];
   }
 
-  // 3. OTOP & Local Village Products
+  // ============================================================
+  // 8. OTOP & Local Village Products
+  // ============================================================
   if (
     query.includes('otop') ||
     query.includes('โอทอป') ||
     query.includes('ชุมชน') ||
     query.includes('ของดี') ||
-    query.includes('ของฝาก') ||
     query.includes('วังไฮ') ||
     query.includes('ข้าวหอม') ||
     query.includes('น้ำผึ้ง') ||
@@ -657,7 +906,9 @@ export async function handleLineMessage(userMessage, storeUrl = DEFAULT_STORE_UR
     return [greetingText, carousel];
   }
 
-  // 4. Best Sellers / Highlights
+  // ============================================================
+  // 9. Best Sellers / Highlights
+  // ============================================================
   if (
     query.includes('ขายดี') ||
     query.includes('ยอดฮิต') ||
@@ -676,7 +927,9 @@ export async function handleLineMessage(userMessage, storeUrl = DEFAULT_STORE_UR
     return [greetingText, carousel];
   }
 
-  // 5. Collections / Promotions / Sets
+  // ============================================================
+  // 10. Collections / Promotions / Sets
+  // ============================================================
   if (
     query.includes('โปร') ||
     query.includes('เซ็ต') ||
@@ -698,7 +951,9 @@ export async function handleLineMessage(userMessage, storeUrl = DEFAULT_STORE_UR
     return [intro, createCollectionsFlexMessage(collections, storeUrl)];
   }
 
-  // 6. Contact & Store Info
+  // ============================================================
+  // 11. Contact & Store Info
+  // ============================================================
   if (
     query.includes('ติดต่อ') ||
     query.includes('แอดมิน') ||
@@ -710,8 +965,10 @@ export async function handleLineMessage(userMessage, storeUrl = DEFAULT_STORE_UR
     return [createContactFlexMessage(storeUrl)];
   }
 
-  // 7. Budget Filter (e.g. "งบ 50", "ไม่เกิน 20", "20 บาท")
-  const budgetMatch = query.match(/(\d+)\s*บาท/) || query.match(/งบ\s*(\d+)/) || query.match(/ไม่เกิน\s*(\d+)/);
+  // ============================================================
+  // 12. Budget Filter (e.g. "งบ 50", "ไม่เกิน 20", "20 บาท")
+  // ============================================================
+  const budgetMatch = query.match(/(\d+)\s*บาท/) || query.match(/งบ\s*(\d+)/) || query.match(/ไม่เกิน\s*(\d+)/) || query.match(/มีตัง\s*(\d+)/);
   if (budgetMatch) {
     const maxBudget = parseInt(budgetMatch[1], 10);
     if (!isNaN(maxBudget) && maxBudget > 0) {
@@ -728,7 +985,9 @@ export async function handleLineMessage(userMessage, storeUrl = DEFAULT_STORE_UR
     }
   }
 
-  // 8. Specific Search in Product Names & Descriptions
+  // ============================================================
+  // 13. Specific Search in Product Names & Descriptions
+  // ============================================================
   const matched = products.filter(p => 
     p.name.toLowerCase().includes(query) || 
     (p.description && p.description.toLowerCase().includes(query)) ||
@@ -745,24 +1004,30 @@ export async function handleLineMessage(userMessage, storeUrl = DEFAULT_STORE_UR
     return [textMsg, carousel];
   }
 
-  // 9. Conversational Fallback with Gemini AI (if available) or Consultative Assistant
+  // ============================================================
+  // 14. Conversational Fallback with Gemini AI (Contextual Bridge)
+  // ============================================================
   const catalogSummary = products.slice(0, 20).map(p => `- ${p.name} (฿${p.price}/${p.unit}): ${p.description}`).join('\n');
   const aiPrompt = `
-คุณคือ "น้องพร้อมเสิร์ฟ" พนักงานแนะนำสินค้าใจดีและสุภาพประจำ "ร้านค้าสวัสดิการกองทุนหมู่บ้านวังไฮ" (@237ipknp)
-ร้านเราจำหน่าย:
-1. ขนมไทยโบราณและขนมยุค 90s ยอดฮิต (โอเดงยาแถมการ์ดพลัง, ขนมจาจาบ้านต่อกระดาษ, หมากฝรั่งตรานกแก้ว, ลูกอมซาสี่, ขนมไม้ตังเม, เวเฟอร์เซียงไฮ ฯลฯ)
-2. สินค้า OTOP และของดีประจำหมู่บ้านวังไฮ (ข้าวหอมมะลิอินทรีย์, น้ำผึ้งป่าเดือนห้า, ผ้าทอมือย้อมคราม, ลำไยอบแห้งสีทอง)
+คุณคือ "น้องพร้อมเสิร์ฟ" พนักงานแนะนำสินค้าใจดี อารมณ์ดี และสุภาพประจำ "ร้านค้าสวัสดิการกองทุนหมู่บ้านวังไฮ" (@237ipknp)
+
+เป้าหมายของคุณ:
+รับฟังคำถามของลูกค้า ไม่ว่าจะถามเกี่ยวกับอะไร (อารมณ์, ปัญหาชีวิต, ถามกวนๆ, งบประหยัด) ให้ตอบรับด้วยความเข้าใจ อบอุ่น ยิ้มแย้ม และทำ "Contextual Bridge" เชื่อมโยงกลับมาแนะนำสินค้าในร้านได้อย่างแนบเนียน
+
+หมวดหมู่สินค้าในร้าน:
+1. ขนมไทยโบราณและขนมยุค 90s (โอเดงยาแถมการ์ด, จาจาแถมบ้านกระดาษ, หมากฝรั่งนกแก้ว, ลูกอมซาสี่, ตังเมไม้, ขนมผิง, เซียงไฮ ฯลฯ)
+2. สินค้า OTOP วังไฮ (ข้าวหอมมะลิอินทรีย์, น้ำผึ้งป่าเดือนห้า, ผ้าทอมือย้อมคราม, กล้วยตาก, ลำไยอบแห้ง)
 3. ข้าวสาร อาหารแห้ง เครื่องปรุง และของใช้ในครัวเรือนราคาสวัสดิการ
 
-รายการสินค้าบางส่วน:
+รายการสินค้าตัวอย่าง:
 ${catalogSummary}
 
-ลูกค้าถามว่า: "${userMessage}"
+ลูกค้าพิมพ์มาว่า: "${userMessage}"
 
 คำแนะนำในการตอบ:
-- ตอบด้วยภาษาไทยที่สุภาพ อบอุ่น เป็นกันเอง และให้ข้อมูลอย่างตรงประเด็น (ความยาวประมาณ 2-4 บรรทัด)
-- แนะนำสินค้าที่เกี่ยวข้องถ้ามี และเชิญชวนลูกค้าเข้าชมหรือสั่งซื้อผ่านเว็บไซต์ร้านค้า
-- ไม่ต้องใส่สัญลักษณ์ Markdown ที่ซับซ้อน ตอบแบบพร้อมส่งเข้า LINE Chat ทันที
+- ตอบด้วยภาษาไทยที่สุภาพ น่ารัก อบอุ่น มีอีโมจิน่ารักประกอบ
+- ความยาว 2-4 บรรทัด กำลังพอดี
+- ชวนลูกค้าดูสินค้าหรือเข้าชมร้านค้าออนไลน์
 `;
 
   let aiReply = await callGeminiAi(aiPrompt);
