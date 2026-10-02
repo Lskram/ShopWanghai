@@ -553,7 +553,25 @@ ${fewShotText ? `## 💡 ตัวอย่างคำตอบที่แอ�
     replyText = '🏡 ร้านค้าสวัสดิการกองทุนหมู่บ้านวังไฮ ตั้งอยู่ที่ทำการกองทุนหมู่บ้านวังไฮ ต.วังไฮ อ.เมือง จ.ลำพูน เปิดบริการทุกวัน 07:00 - 20:00 น. หรือกดสั่งซื้อผ่านระบบออนไลน์พร้อมจัดส่งด่วนถึงบ้านได้ตลอด 24 ชม. เลยนะคะ 🚚✨';
     intent = 'store_location';
   } 
-  // 2. มีงบจำกัด / ระบุจำนวนเงิน (เช่น 40 บาท, 50 บาท, งบประหยัด)
+  // 2. ถามหาเครื่องดื่มที่ไม่มี เช่น ชาเขียว, ชานม, ชาไทย, กาแฟสด
+  else if (lowerQ.includes('ชาเขียว') || lowerQ.includes('ชานม') || lowerQ.includes('ชาไทย') || lowerQ.includes('กาแฟสด') || lowerQ.includes('โกโก้')) {
+    replyText = 'ขออภัยด้วยนะคะคุณลูกค้า ตอนนี้ทางร้านยังไม่มีเมนูชาเขียว/ชงสดค่ะ 🍵 แต่เรามีลูกอมซาสี่ซ่าๆ กาแฟโบราณ และขนมหวานโบราณยุค 90s ทานคู่กันอร่อยสดชื่นพร้อมส่งนะคะ 🍬✨';
+    matched = products.filter(p => p.category === 'retro-snacks' || p.name.includes('ซาสี่')).slice(0, 3);
+    intent = 'drink_inquiry_out_of_scope';
+  }
+  // 3. ขอเมนูอื่น / ไม่ซ้ำกับรายการก่อนหน้า
+  else if (lowerQ.includes('ไม่ซ้ำ') || lowerQ.includes('เมนูอื่น') || lowerQ.includes('อย่างอื่น') || lowerQ.includes('เซ็ตอื่น')) {
+    matched = products.filter(p => !['TRAD-01'].includes(p.id) && Number(p.price) <= 40).slice(0, 4);
+    replyText = 'จัดให้เลยค่ะ! 🍭 เซ็ตขนมและของดีวังไฮชุดใหม่ไม่ซ้ำเดิมในงบ 100 บาท: ทองม้วนกะทิสด (40฿) + ข้าวแต๋นน้ำแตงโม (35฿) + ขนมผิงอบควันเทียน (25฿) รวม 100 บาทพอดีเป๊ะ อร่อยเพลินไม่ซ้ำใครแน่นอนค่ะ 💖';
+    intent = 'alternative_recommendation';
+  }
+  // 4. มีงบจำกัด + อยากได้เยอะๆ / ไปฝากที่บ้าน
+  else if (lowerQ.includes('เยอะ') || (lowerQ.includes('ฝาก') && (lowerQ.includes('100') || lowerQ.includes('งบ')))) {
+    matched = products.filter(p => Number(p.price) <= 25).slice(0, 4);
+    replyText = 'งบ 100 บาทอยากได้จำนวนชิ้นเยอะๆ คุ้มๆ น้องพร้อมเสิร์ฟจัดเซ็ต 4 ชิ้นเต็มถุงให้เลยค่ะ: ขนมจาจา (20฿) + ตังเมไม้ (20฿) + ขนมโอเดงยา (25฿) + ขนมผิง (25฿) รวม 90 บาท เหลือเงินทอน 10 บาท ได้ขนมเต็มถุงไปฝากคนที่บ้านแน่นอนค่ะ 🛍️✨';
+    intent = 'bulk_budget_gift';
+  }
+  // 5. มีงบจำกัด / ระบุจำนวนเงินทั่วไป (เช่น 40 บาท, 50 บาท, งบประหยัด)
   else if (lowerQ.match(/(\d+)\s*บาท/) || lowerQ.includes('งบ') || lowerQ.includes('มีตังค์') || lowerQ.includes('มีเงิน')) {
     const budgetMatch = lowerQ.match(/(\d+)\s*บาท/) || lowerQ.match(/งบ\s*(\d+)/) || lowerQ.match(/มีเงิน\s*(\d+)/) || lowerQ.match(/มีตังค์\s*(\d+)/);
     const maxBudget = budgetMatch ? parseInt(budgetMatch[1]) : 50;
@@ -563,37 +581,37 @@ ${fewShotText ? `## 💡 ตัวอย่างคำตอบที่แอ�
     replyText = `งบ ${maxBudget} บาท อิ่มอร่อยสบายกระเป๋าแน่นอนค่ะ! 🍭 น้องพร้อมเสิร์ฟขอแนะนำเซ็ตขนมโบราณ 90s ราคาสบายกระเป๋า เลือกช้อปได้ตามใจชอบด้านล่างนี้เลยนะคะ 💖`;
     intent = 'budget_recommendation';
   }
-  // 3. โปรส่งฟรี / ค่าจัดส่ง
+  // 6. โปรส่งฟรี / ค่าจัดส่ง
   else if (lowerQ.includes('ส่งฟรี') || lowerQ.includes('ค่าส่ง') || lowerQ.includes('กี่บาทส่งฟรี') || lowerQ.includes('ส่งของยังไง')) {
     replyText = 'ร้านเรามีโปรโมชั่นพิเศษ! จัดส่งด่วนฟรีทั่วไทยทันทีเมื่อสั่งซื้อครบ 300 บาทขึ้นไปค่ะ (ถ้ายอดไม่ถึง 300 บาท คิดค่าจัดส่งเหมาจ่ายเพียง 35 บาท) จัดส่งทุกวันจันทร์-เสาร์ค่ะ 🚚💨';
     intent = 'shipping_inquiry';
   } 
-  // 4. อารมณ์ / ปัญหาชีวิต / อกหัก / เครียด / เศร้า
+  // 7. อารมณ์ / ปัญหาชีวิต / อกหัก / เครียด / เศร้า
   else if (lowerQ.includes('อกหัก') || lowerQ.includes('เครียด') || lowerQ.includes('เศร้า') || lowerQ.includes('ท้อ') || lowerQ.includes('เสียใจ')) {
     replyText = 'โอ๋ๆ กอดๆ นะคะ 🥺 เวลาเครียดหรือเศร้า ให้ของหวานอร่อยๆ และกล้วยเบรคแตกช่วยเยียวยาหัวใจนะคะ น้องคัดขนมหวานย้อนวัยมาเติมพลังใจให้ค่ะ 💖';
     matched = products.filter(p => p.category === 'retro-snacks' || p.name.includes('กล้วย') || p.name.includes('ทองม้วน')).slice(0, 3);
     intent = 'emotional_comfort';
   } 
-  // 5. ของฝาก / แม่ยาย / ผู้ใหญ่ / ไหว้พระ / ทำบุญ
+  // 8. ของฝาก / แม่ยาย / ผู้ใหญ่ / ไหว้พระ / ทำบุญ
   else if (lowerQ.includes('ของฝาก') || lowerQ.includes('แม่ยาย') || lowerQ.includes('ผู้ใหญ่') || lowerQ.includes('ของขวัญ') || lowerQ.includes('ทำบุญ')) {
     replyText = 'สำหรับของฝากผู้ใหญ่และคนพิเศษ แนะนำของดีบ้านวังไฮ "ข้าวหอมมะลิอินทรีย์แท้" และ "น้ำผึ้งป่าเดือนห้าธรรมชาติ 100%" สุขภาพดี ประทับใจแน่นอนค่ะ 🌾✨';
     matched = products.filter(p => p.category === 'otop' || p.name.includes('น้ำผึ้ง') || p.name.includes('ข้าว')).slice(0, 3);
     intent = 'gift_recommendation';
   }
-  // 6. ถามหาขนมโอเดงยา / การ์ดพลัง / ของเล่น 90s
+  // 9. ถามหาขนมโอเดงยา / การ์ดพลัง / ของเล่น 90s
   else if (lowerQ.includes('โอเดงยา') || lowerQ.includes('การ์ด') || lowerQ.includes('จาจา') || lowerQ.includes('บ้านกระดาษ')) {
     replyText = 'มีพร้อมส่งเลยค่ะ! 🍬 ขนมโอเดงยาแถมการ์ดพลังระดับตำนาน และขนมจาจาแถมบ้านกระดาษ ของแท้ สดใหม่ กรอบอร่อย สั่งซื้อทางนี้ได้เลยนะคะ!';
     matched = products.filter(p => p.id === 'TRAD-01' || p.id === 'TRAD-02' || p.category === 'retro-snacks').slice(0, 3);
     intent = 'nostalgia_snacks';
   } 
-  // 7. OTOP / สินค้าชุมชน / สุขภาพ / เบาหวาน
+  // 10. OTOP / สินค้าชุมชน / สุขภาพ / เบาหวาน
   else if (lowerQ.includes('otop') || lowerQ.includes('วังไฮ') || lowerQ.includes('สุขภาพ') || lowerQ.includes('เบาหวาน') || lowerQ.includes('ข้าวกล้อง')) {
     replyText = 'สินค้าเพื่อสุขภาพและ OTOP ของแท้จากภูมิปัญญาชาวบ้านวังไฮ ข้าวกล้องอินทรีย์ดัชนีน้ำตาลต่ำ และน้ำผึ้งป่าแท้ พร้อมส่งถึงบ้านค่ะ 🌿✨';
     matched = products.filter(p => p.category === 'otop').slice(0, 3);
     intent = 'otop_health_inquiry';
   } 
-  // 8. ถามหาสินค้าที่ไม่มีในร้าน (เช่น พิซซ่า, ชาไข่มุก)
-  else if (lowerQ.includes('พิซซ่า') || lowerQ.includes('ชาไข่มุก') || lowerQ.includes('ส้มตำ') || lowerQ.includes('กาแฟสด')) {
+  // 11. ถามหาสินค้าที่ไม่มีในร้าน (เช่น พิซซ่า, ชาไข่มุก)
+  else if (lowerQ.includes('พิซซ่า') || lowerQ.includes('ชาไข่มุก') || lowerQ.includes('ส้มตำ')) {
     replyText = 'ขออภัยนะคะ ทางร้านยังไม่มีเมนูดังกล่าวค่ะ แต่เรามีขนมไทยโบราณยุค 90s ทานเล่นเพลินๆ และของดีชุมชนวังไฮพร้อมจัดส่งให้อร่อยถึงบ้านเลยนะคะ 🍭🌾';
     matched = products.filter(p => p.isFeatured).slice(0, 3);
     intent = 'out_of_scope_query';
