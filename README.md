@@ -1,34 +1,33 @@
 # 🏪 ร้านค้าสวัสดิการ กองทุนหมู่บ้านวังไฮ (Wang Hai Village Fund Store)
 
-เว็บแอปพลิเคชันร้านขายของชำและสินค้าชุมชน OTOP สำหรับ **กองทุนหมู่บ้านวังไฮ** พัฒนาด้วย **Next.js (App Router), React 18, Tailwind CSS, Supabase** และรองรับการ Deploy บน **Vercel** พร้อม API เชื่อมต่อกับ **LINE OA Chatbot & AI**
+เว็บแอปพลิเคชันร้านขายของชำ ขนมโบราณ 90s และสินค้าชุมชน OTOP สำหรับ **กองทุนหมู่บ้านวังไฮ จ.ลำพูน** พัฒนาด้วย **Next.js (App Router), React 18, Tailwind CSS, Supabase** พร้อมระบบ **Modern Generative AI Agent with Real-Time RAG (Gemini LLM)** เชื่อมต่อกับ **LINE Official Account (@237ipknp)**
 
 ---
 
 ## 🌟 ฟีเจอร์เด่นในระบบ
 
 ### 1. 🛒 หน้าร้านสำหรับลูกค้า (Storefront)
-- **หมวดหมู่สินค้าครบครัน (พร้อมรูปภาพจริงจากอินเทอร์เน็ต):**
-  - ✨ **สินค้าชุมชน OTOP วังไฮ** (กล้วยตากพลังงานแสงอาทิตย์, ข้าวกล้องอินทรีย์, น้ำพริกตาแดงโบราณ, สบู่สมุนไพร, ไข่ไก่อารมณ์ดี)
-  - 🔥 **เครื่องปรุง & วัตถุดิบ** (น้ำปลาทิพรส, น้ำมันมรกต, น้ำตาลมิตรผล, ซอสหอยนางรม, รสดี, ซีอิ๊วขาว)
-  - 🍜 **อาหารแห้ง & บะหมี่** (มาม่าต้มยำกุ้ง, ไวไวหมูสับ, ปลากระป๋องสามแม่ครัว, ข้าวหอมมะลิตราฉัตร, วุ้นเส้น)
-  - 🍿 **ขนมขบเคี้ยว & ของหวาน** (เลย์คลาสสิค, เลย์สาหร่าย, ป๊อกกี้, ฮานามิ, โก๋แก่, ยูโร่เค้ก)
-  - 🧃 **เครื่องดื่ม & นม** (ชาเขียวอิชิตัน, นมถั่วเหลืองแลคตาซอย, เบอร์ดี้, น้ำดื่มสวัสดิการวังไฮ, โค้ก)
-  - 🧼 **ของใช้ในครัวเรือน & สุขอนามัย** (ผงซักฟอกบรีส, ซันไลต์, ยาสระผมซันซิล, คอลเกต, สบู่นกแก้ว, ทิชชู่)
+- **หมวดหมู่สินค้าครบครัน (พร้อมรูปภาพจริง):**
+  - 🍭 **ขนมไทยโบราณ & ขนมวัยเด็กยุค 90s** (โอเดงยาแถมการ์ดพลัง, จาจาแถมบ้านกระดาษ, หมากฝรั่งนกแก้ว, ลูกอมซาสี่, ตังเมไม้, ขนมผิง, กล้วยเบรคแตก)
+  - 🌾 **สินค้าชุมชน OTOP วังไฮ** (ข้าวหอมมะลิอินทรีย์, ข้าวกล้อง, น้ำผึ้งป่าเดือนห้าแท้, ผ้าทอมือย้อมคราม, ลำไยอบแห้งสีทอง, กล้วยตากพลังงานแสงอาทิตย์)
+  - 🛒 **ของใช้ในครัวเรือน & เครื่องปรุง** (น้ำปลา, น้ำมันพืช, ข้าวสาร, อาหารแห้ง, ผงซักฟอก)
 - **ระบบค้นหา & ตัวกรองอัจฉริยะ (Search & Filter):** ค้นหาชื่อสินค้า สเปก หรือแท็กได้แบบ Real-time
 - **ระบบตะกร้าสินค้า (Shopping Cart Drawer):** ปรับจำนวนสินค้า คำนวณยอดเงินรวมอัตโนมัติ
-- **ระบบคำนวณค่าจัดส่ง:** ส่งฟรีถึงหน้าบ้านในหมู่บ้านเมื่อสั่งครบ 200 บาท
-- **ระบบชำระเงิน:** พร้อมเพย์ QR Code (คำนวณยอดตามบิลจริง) หรือชำระเงินสดปลายทาง
+- **ระบบคำนวณค่าจัดส่ง:** สั่งครบ 300 บาท จัดส่งด่วนฟรีทั่วไทย (ต่ำกว่า 300 บาท เหมาจ่าย 35 บาท)
+- **ระบบชำระเงิน:** พร้อมเพย์ QR Code (คำนวณยอดตามบิลจริง) หรือชำระเงินสดปลายทาง (COD)
 
-### 2. 📦 ระบบจัดการสต็อก & หลังบ้าน (Admin Dashboard: `/admin`)
+### 2. 🤖 ระบบ AI Chatbot อัจฉริยะ "น้องพร้อมเสิร์ฟ" (100% Dynamic Generative AI)
+- **Zero Hardcoded Responses:** ประมวลผลและตอบคำถามแบบไดนามิกผ่าน Gemini LLM 100%
+- **Strict Store Grounding:** ตอบภายใต้คลังความรู้ [storeKnowledge.md](file:///C:/Users/tlelo/src/data/storeKnowledge.md) และแคตตาล็อกสินค้าจริงในร้านเท่านั้น
+- **High-Speed Multi-Model Pipeline:** สลับโมเดลความเร็วสูงอัตโนมัติ (`gemini-flash-lite-latest`, `gemini-3.5-flash`) ตอบกลับได้ใน 1 - 2 วินาที
+- **LINE Flex Message Carousel:** สร้างการ์ดสินค้าพร้อมปุ่มกดสั่งซื้อแนบไปในแชทอัตโนมัติ
+- 📖 **อ่านคู่มือการตั้งค่า AI ฉบับเต็มได้ที่:** [AI_BOT_SETUP.md](file:///C:/Users/tlelo/AI_BOT_SETUP.md)
+
+### 3. 📦 ระบบจัดการสต็อก & คลังความรู้หลังบ้าน (Admin Dashboard: `/admin`)
 - ตรวจสอบจำนวนสต็อกคงเหลือรวม และแจ้งเตือน **สินค้าใกล้หมด (Low Stock Alert ≤ 5)**
 - ปรับเพิ่ม/ลดสต็อกแบบด่วน (Quick Stock Adjustment `+`, `-`, `+5`)
-- เพิ่มสินค้าใหม่ / แก้ไขราคา / สต็อก / รูปภาพ / คำอธิบาย
-- ดูประวัติและรายละเอียดรายการสั่งซื้อของลูกค้า
-- ใช้งานได้ทั้งใน **Local Storage Mode** (ทดสอบได้ทันที) และ **Supabase Database Mode**
-
-### 3. 🤖 API Endpoints พร้อมต่อยอด LINE Bot & Gemini
-- `GET /api/products` : ให้ LINE Bot หรือ Gemini ดึงรายการสินค้าและสต็อกไปตอบลูกค้า
-- `POST /api/orders` : ให้ LINE Bot ส่งคำสั่งซื้อของลูกค้าเข้ามาบันทึกในระบบ
+- **แท็บคลังความรู้ & ฝึกสอน AI (.md):** แก้ไขกฎ กติกา และนโยบายร้านค้าแบบ Markdown พร้อมบันทึกขึ้น Supabase แบบ Real-time
+- **Live Chat Logs:** ดูสตรีมคำถามลูกค้าจาก LINE OA พร้อมปุ่มกดเพิ่มเข้ากฎ .md หรือกดฝึกสอน AI ได้ทันที
 
 ---
 
@@ -36,32 +35,34 @@
 
 1. เปิด Terminal ในโฟลเดอร์โปรเจกต์:
    ```bash
-   cd C:\Users\tlelo\.gemini\antigravity\scratch\wanghai-village-store
-   ```
-2. รันคำสั่งเปิดเครื่องเซิร์ฟเวอร์:
-   ```bash
    npm run dev
    ```
-3. เปิดเบราว์เซอร์เข้าไปที่:
+2. เปิดเบราว์เซอร์เข้าไปที่:
    * **หน้าร้านค้า:** [http://localhost:3000](http://localhost:3000)
-   * **ระบบจัดการสต็อกหลังบ้าน:** [http://localhost:3000/admin](http://localhost:3000/admin)
+   * **ระบบจัดการสต็อก & AI หลังบ้าน:** [http://localhost:3000/admin](http://localhost:3000/admin)
 
 ---
 
 ## 🗄️ การเชื่อมต่อกับ Supabase (Online Database)
 
-1. สร้างโปรเจกต์ใหม่บน [Supabase](https://supabase.com/)
-2. ไปที่เมนู **SQL Editor** -> นำโค้ดในไฟล์ `supabase_schema.sql` ไปวางแล้วกด **Run**
-3. ไปที่ **Project Settings -> API** นำค่ามาใส่ในไฟล์ `.env.local`:
+1. สร้างโปรเจกต์บน [Supabase](https://supabase.com/)
+2. นำ SQL ในไฟล์ `supabase_schema.sql` ไปรันใน SQL Editor
+3. ตั้งค่า Environment Variables ในไฟล์ `.env.local`:
    ```env
    NEXT_PUBLIC_SUPABASE_URL=https://xxxxxxxxxxxx.supabase.co
    NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsIn...
+   LINE_CHANNEL_SECRET=fcd0db0af8330d9bd35a20616259d4bf
+   LINE_CHANNEL_ACCESS_TOKEN=YWzK8zBn3WhDm...
+   GEMINI_API_KEY=AQ.Ab8...
    ```
 
 ---
 
 ## ☁️ การนำขึ้น Vercel (Deploy to Production)
 
-1. นำโฟลเดอร์โปรเจกต์นี้ขึ้น GitHub Repo
-2. เข้าเว็บ [Vercel.com](https://vercel.com/) -> กด **Add New Project** -> เลือก Repo นี้
-3. ใส่ Environment Variables (Supabase URL และ Anon Key) แล้วกด **Deploy** ได้ทันทีครับ!
+1. นำขึ้น GitHub Repository
+2. เชื่อมต่อกับ Vercel และเพิ่ม Environment Variables
+3. Webhook URL สำหรับ LINE Developers Console:
+   ```
+   https://shop-wanghai-o7qg.vercel.app/api/webhook
+   ```
