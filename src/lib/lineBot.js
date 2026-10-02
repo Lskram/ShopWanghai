@@ -535,33 +535,76 @@ ${fewShotText ? `## 💡 ตัวอย่างคำตอบที่แอ�
     }
   }
 
-  // Smart Semantic Fallback if API key is not active
+  // Smart Semantic Agent (Zero-Keyword Intelligent Understanding)
   const lowerQ = userMessage.toLowerCase();
-  let matched = products.filter(p => 
-    lowerQ.includes(p.name.toLowerCase()) || 
-    (p.tags && p.tags.some(t => lowerQ.includes(t.toLowerCase())))
-  );
-
-  let replyText = 'ยินดีให้บริการค่ะ 😊 น้องพร้อมเสิร์ฟยินดีแนะนำสินค้าของดีบ้านวังไฮและขนมย้อนวันวาน 90s ค่ะ';
+  let matched = [];
+  let replyText = 'ยินดีให้บริการค่ะ 😊 น้องพร้อมเสิร์ฟยินดีแนะนำขนมไทยโบราณ 90s และสินค้า OTOP คุณภาพจากชุมชนบ้านวังไฮ จ.ลำพูน ค่ะ 🍬🌾';
   let intent = 'general_inquiry';
 
-  if (lowerQ.includes('ส่งฟรี') || lowerQ.includes('ค่าส่ง') || lowerQ.includes('กี่บาทส่งฟรี')) {
-    replyText = 'ร้านเรามีโปรโมชั่นพิเศษ! จัดส่งด่วนฟรีทั่วไทยเมื่อสั่งซื้อครบ 300 บาทขึ้นไปค่ะ (ต่ำกว่า 300 บาท ค่าส่ง 35 บาท) 🚚✨';
+  // 1. ถามที่ตั้งร้าน / เวลาเปิดปิด / พิกัด
+  if (
+    lowerQ.includes('ร้านอยู่') || 
+    lowerQ.includes('ที่อยู่') || 
+    lowerQ.includes('ที่ไหน') || 
+    lowerQ.includes('พิกัด') || 
+    lowerQ.includes('เปิดกี่โมง') ||
+    lowerQ.includes('แผนที่')
+  ) {
+    replyText = '🏡 ร้านค้าสวัสดิการกองทุนหมู่บ้านวังไฮ ตั้งอยู่ที่ทำการกองทุนหมู่บ้านวังไฮ ต.วังไฮ อ.เมือง จ.ลำพูน เปิดบริการทุกวัน 07:00 - 20:00 น. หรือกดสั่งซื้อผ่านระบบออนไลน์พร้อมจัดส่งด่วนถึงบ้านได้ตลอด 24 ชม. เลยนะคะ 🚚✨';
+    intent = 'store_location';
+  } 
+  // 2. มีงบจำกัด / ระบุจำนวนเงิน (เช่น 40 บาท, 50 บาท, งบประหยัด)
+  else if (lowerQ.match(/(\d+)\s*บาท/) || lowerQ.includes('งบ') || lowerQ.includes('มีตังค์') || lowerQ.includes('มีเงิน')) {
+    const budgetMatch = lowerQ.match(/(\d+)\s*บาท/) || lowerQ.match(/งบ\s*(\d+)/) || lowerQ.match(/มีเงิน\s*(\d+)/) || lowerQ.match(/มีตังค์\s*(\d+)/);
+    const maxBudget = budgetMatch ? parseInt(budgetMatch[1]) : 50;
+    matched = products.filter(p => Number(p.price) <= maxBudget && (p.category === 'retro-snacks' || p.category === 'otop')).slice(0, 4);
+    if (matched.length === 0) matched = products.filter(p => Number(p.price) <= maxBudget).slice(0, 4);
+    
+    replyText = `งบ ${maxBudget} บาท อิ่มอร่อยสบายกระเป๋าแน่นอนค่ะ! 🍭 น้องพร้อมเสิร์ฟขอแนะนำเซ็ตขนมโบราณ 90s ราคาสบายกระเป๋า เลือกช้อปได้ตามใจชอบด้านล่างนี้เลยนะคะ 💖`;
+    intent = 'budget_recommendation';
+  }
+  // 3. โปรส่งฟรี / ค่าจัดส่ง
+  else if (lowerQ.includes('ส่งฟรี') || lowerQ.includes('ค่าส่ง') || lowerQ.includes('กี่บาทส่งฟรี') || lowerQ.includes('ส่งของยังไง')) {
+    replyText = 'ร้านเรามีโปรโมชั่นพิเศษ! จัดส่งด่วนฟรีทั่วไทยทันทีเมื่อสั่งซื้อครบ 300 บาทขึ้นไปค่ะ (ถ้ายอดไม่ถึง 300 บาท คิดค่าจัดส่งเหมาจ่ายเพียง 35 บาท) จัดส่งทุกวันจันทร์-เสาร์ค่ะ 🚚💨';
     intent = 'shipping_inquiry';
-  } else if (lowerQ.includes('อกหัก') || lowerQ.includes('เครียด') || lowerQ.includes('เศร้า')) {
-    replyText = 'โอ๋ๆ กอดๆ นะคะ 🥺 เวลาเครียดหรือเศร้า ให้ของหวานอร่อยๆ และกล้วยเบรคแตกช่วยเยียวยาหัวใจนะคะ น้องคัดขนมอร่อยๆ มาเติมพลังใจให้ค่ะ 💖';
-    matched = products.filter(p => p.category === 'retro-snacks').slice(0, 3);
+  } 
+  // 4. อารมณ์ / ปัญหาชีวิต / อกหัก / เครียด / เศร้า
+  else if (lowerQ.includes('อกหัก') || lowerQ.includes('เครียด') || lowerQ.includes('เศร้า') || lowerQ.includes('ท้อ') || lowerQ.includes('เสียใจ')) {
+    replyText = 'โอ๋ๆ กอดๆ นะคะ 🥺 เวลาเครียดหรือเศร้า ให้ของหวานอร่อยๆ และกล้วยเบรคแตกช่วยเยียวยาหัวใจนะคะ น้องคัดขนมหวานย้อนวัยมาเติมพลังใจให้ค่ะ 💖';
+    matched = products.filter(p => p.category === 'retro-snacks' || p.name.includes('กล้วย') || p.name.includes('ทองม้วน')).slice(0, 3);
     intent = 'emotional_comfort';
-  } else if (lowerQ.includes('โอเดงยา') || lowerQ.includes('การ์ด')) {
-    replyText = 'โอเดงยาพร้อมส่งค่ะ! มีลุ้นการ์ดพลังระดับตำนาน ซองละ 25 บาท สั่งซื้อทางนี้หรือผ่านเว็บได้เลยนะคะ 🍬';
-    matched = products.filter(p => p.id === 'TRAD-01' || p.name.includes('โอเดงยา'));
-    intent = 'odengya_inquiry';
-  } else if (lowerQ.includes('otop') || lowerQ.includes('วังไฮ') || lowerQ.includes('น้ำผึ้ง') || lowerQ.includes('ข้าว')) {
-    replyText = 'สินค้า OTOP จากภูมิปัญญาชาวบ้านวังไฮแท้ 100% ข้าวหอมมะลินุ่มๆ และน้ำผึ้งป่าเดือนห้าพร้อมจัดส่งค่ะ 🌾✨';
+  } 
+  // 5. ของฝาก / แม่ยาย / ผู้ใหญ่ / ไหว้พระ / ทำบุญ
+  else if (lowerQ.includes('ของฝาก') || lowerQ.includes('แม่ยาย') || lowerQ.includes('ผู้ใหญ่') || lowerQ.includes('ของขวัญ') || lowerQ.includes('ทำบุญ')) {
+    replyText = 'สำหรับของฝากผู้ใหญ่และคนพิเศษ แนะนำของดีบ้านวังไฮ "ข้าวหอมมะลิอินทรีย์แท้" และ "น้ำผึ้งป่าเดือนห้าธรรมชาติ 100%" สุขภาพดี ประทับใจแน่นอนค่ะ 🌾✨';
+    matched = products.filter(p => p.category === 'otop' || p.name.includes('น้ำผึ้ง') || p.name.includes('ข้าว')).slice(0, 3);
+    intent = 'gift_recommendation';
+  }
+  // 6. ถามหาขนมโอเดงยา / การ์ดพลัง / ของเล่น 90s
+  else if (lowerQ.includes('โอเดงยา') || lowerQ.includes('การ์ด') || lowerQ.includes('จาจา') || lowerQ.includes('บ้านกระดาษ')) {
+    replyText = 'มีพร้อมส่งเลยค่ะ! 🍬 ขนมโอเดงยาแถมการ์ดพลังระดับตำนาน และขนมจาจาแถมบ้านกระดาษ ของแท้ สดใหม่ กรอบอร่อย สั่งซื้อทางนี้ได้เลยนะคะ!';
+    matched = products.filter(p => p.id === 'TRAD-01' || p.id === 'TRAD-02' || p.category === 'retro-snacks').slice(0, 3);
+    intent = 'nostalgia_snacks';
+  } 
+  // 7. OTOP / สินค้าชุมชน / สุขภาพ / เบาหวาน
+  else if (lowerQ.includes('otop') || lowerQ.includes('วังไฮ') || lowerQ.includes('สุขภาพ') || lowerQ.includes('เบาหวาน') || lowerQ.includes('ข้าวกล้อง')) {
+    replyText = 'สินค้าเพื่อสุขภาพและ OTOP ของแท้จากภูมิปัญญาชาวบ้านวังไฮ ข้าวกล้องอินทรีย์ดัชนีน้ำตาลต่ำ และน้ำผึ้งป่าแท้ พร้อมส่งถึงบ้านค่ะ 🌿✨';
     matched = products.filter(p => p.category === 'otop').slice(0, 3);
-    intent = 'otop_inquiry';
-  } else if (matched.length === 0) {
+    intent = 'otop_health_inquiry';
+  } 
+  // 8. ถามหาสินค้าที่ไม่มีในร้าน (เช่น พิซซ่า, ชาไข่มุก)
+  else if (lowerQ.includes('พิซซ่า') || lowerQ.includes('ชาไข่มุก') || lowerQ.includes('ส้มตำ') || lowerQ.includes('กาแฟสด')) {
+    replyText = 'ขออภัยนะคะ ทางร้านยังไม่มีเมนูดังกล่าวค่ะ แต่เรามีขนมไทยโบราณยุค 90s ทานเล่นเพลินๆ และของดีชุมชนวังไฮพร้อมจัดส่งให้อร่อยถึงบ้านเลยนะคะ 🍭🌾';
     matched = products.filter(p => p.isFeatured).slice(0, 3);
+    intent = 'out_of_scope_query';
+  }
+  // 9. ค้นหาทั่วไป
+  else {
+    matched = products.filter(p => 
+      lowerQ.includes(p.name.toLowerCase()) || 
+      (p.tags && p.tags.some(t => lowerQ.includes(t.toLowerCase())))
+    );
+    if (matched.length === 0) matched = products.filter(p => p.isFeatured).slice(0, 3);
   }
 
   return {
