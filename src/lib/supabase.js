@@ -15,7 +15,7 @@ export const supabase = isSupabaseConfigured
   ? createClient(supabaseUrl, supabaseAnonKey)
   : null;
 
-const DATA_VERSION = 'v2.3_modern_ai_agent';
+const DATA_VERSION = 'v2.4_50_new_products';
 
 export const INITIAL_AI_RULES = [
   {
@@ -112,7 +112,16 @@ export const storeRepo = {
         query = query.contains('collections', [filter.collection]);
       }
       const { data, error } = await query.order('id', { ascending: true });
-      if (!error && data && data.length > 0) return data;
+      if (!error && data && data.length > 0) {
+        return data.map(p => ({
+          ...p,
+          categoryName: p.category_name || p.categoryName || p.category,
+          soldCount: p.sold_count !== undefined ? p.sold_count : p.soldCount,
+          minStock: p.min_stock !== undefined ? p.min_stock : p.minStock,
+          isFeatured: p.is_featured !== undefined ? p.is_featured : p.isFeatured,
+          isCommunityProduct: p.is_community_product !== undefined ? p.is_community_product : p.isCommunityProduct
+        }));
+      }
     }
     
     // Fallback: LocalStorage / Initial Mock
